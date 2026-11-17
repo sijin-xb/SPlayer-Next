@@ -22,7 +22,10 @@ const artistFollow: KGModule = async (params) => {
 
   const clienttime = Math.floor(Date.now() / 1000);
   const encrypt = encryptKugouParams({ singerid, token: session.token } satisfies FollowParams);
-  const path = params.action === "del" ? "/followservice/v2/unfollow_singer" : "/v2/follow_singer";
+  const path =
+    params.action === "del"
+      ? "/followservice/v3/unfollow_singer"
+      : "/followservice/v3/follow_singer";
 
   await kgGatewayRequest(path, {
     method: "POST",

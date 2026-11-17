@@ -98,12 +98,21 @@ export const uploadToKugouCloud = async (filePath: string): Promise<CloudUploadR
         },
       },
     );
-    const first = (matchResponse.data?.[0] ?? null) as Record<string, unknown> | null;
-    if (first && first.hash) {
+    const entry = (matchResponse.data?.[0] ?? null) as unknown;
+    // 命中时 data 为 [[条目]]（外层对应每个查询 hash），未命中为 [{}]
+    const first = (
+      Array.isArray(entry) ? ((entry[0] ?? null) as Record<string, unknown>) : (entry ?? null)
+    ) as Record<string, unknown> | null;
+    const audioInfo = (first?.audio_info ?? null) as Record<string, unknown> | null;
+    // 曲库 hash 在 audio_info 内（顶层无 hash 字段），与本地文件 md5 一致才算命中
+    const matchedHash = String(
+      first?.hash ?? audioInfo?.hash ?? audioInfo?.hash_128 ?? "",
+    ).toLowerCase();
+    if (first && matchedHash && matchedHash === filename) {
       match = {
         albumAudioId: Number(first.album_audio_id ?? 0),
         audioId: Number(first.audio_id ?? 0),
-        hash: String(first.hash ?? ""),
+        hash: matchedHash,
         name: String(first.ori_audio_name ?? first.audio_name ?? ""),
       };
     }

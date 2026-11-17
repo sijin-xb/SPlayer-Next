@@ -20,6 +20,9 @@ const popoverOpen = ref(false);
 /** 当前平台是否已登录 */
 const isLoggedIn = computed(() => data.isActivePlatformLoggedIn);
 
+/** 当前生效的平台 */
+const isNetease = computed(() => data.activePlatform() === "netease");
+
 /** 当前平台的展示资料，网易云沿用 user store 的完整资料 */
 const displayProfile = computed(() => {
   const platform = data.activePlatform();
@@ -170,11 +173,12 @@ const handleLogout = async (): Promise<void> => {
           {{ displayProfile?.nickname || t("login.unknownUser") }}
         </span>
         <img
-          v-if="displayProfile?.isVip"
+          v-if="displayProfile?.isVip && isNetease"
           :src="vipImg"
           alt="VIP"
           class="h-4 shrink-0 lt-sidebar:hidden"
         />
+        <STag v-else-if="displayProfile?.isVip" size="small" round>VIP</STag>
         <IconLucideChevronDown
           :class="[
             'size-3 text-on-surface-variant transition-transform duration-200 lt-sidebar:hidden',
@@ -212,7 +216,13 @@ const handleLogout = async (): Promise<void> => {
         >
           Lv.{{ user.level }}
         </span>
-        <img v-if="displayProfile?.isVip" :src="vipImg" alt="VIP" class="h-4 shrink-0" />
+        <img
+          v-if="displayProfile?.isVip && isNetease"
+          :src="vipImg"
+          alt="VIP"
+          class="h-4 shrink-0"
+        />
+        <STag v-else-if="displayProfile?.isVip" size="small" round>VIP</STag>
       </div>
       <span
         v-if="displayProfile?.signature"

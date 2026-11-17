@@ -1,0 +1,99 @@
+import type { KGModule } from "../core/types";
+import { getSessionCookies } from "@main/database/sessions";
+import { kgGatewayRequest } from "../core/request";
+
+interface SongRef {
+  name?: string;
+  hash?: string;
+  albumId?: number;
+  mixsongid?: number;
+}
+
+/**
+ * 向歌单添加歌曲
+ * @param params - listid 目标歌单，songs 曲目引用数组
+ * @returns 操作结果
+ */
+export const playlistAddSongs: KGModule = async (params) => {
+  const session = getSessionCookies("kugou");
+  if (!session.token || !session.userid) throw new Error("KG 未登录，无法编辑歌单");
+  const listid = String(params.listid ?? "");
+  const songs = params.songs as SongRef[] | undefined;
+  if (!listid || !songs?.length) throw new Error("KG 歌单操作缺少参数");
+
+  const clienttime = Math.floor(Date.now() / 1000);
+  const resource = songs.map((song) => ({
+    number: 1,
+    name: song.name ?? "",
+    hash: song.hash ?? "",
+    size: 0,
+    sort: 0,
+    timelen: 0,
+    bitrate: 0,
+    album_id: Number(song.albumId ?? 0),
+    mixsongid: Number(song.mixsongid ?? 0),
+  }));
+
+  await kgGatewayRequest("/cloudlist.service/v6/add_song", {
+    method: "POST",
+    params: {
+      last_time: clienttime,
+      last_area: "gztx",
+      userid: session.userid,
+      token: session.token,
+    },
+    data: {
+      userid: session.userid,
+      token: session.token,
+      listid,
+      list_ver: 0,
+      type: 0,
+      slow_upload: 1,
+      scene: "false;null",
+      data: resource,
+    },
+  });
+
+  return { code: 200 };
+};
+
+/**
+ * 创建歌单
+ * @param params - name 歌单名，private 是否私密
+ * @returns 新歌单标识
+ */
+export const playlistCreate: KGModule = async (params) => {
+  const session = getSessionCookies("kugou");
+  if (!session.token || !session.userid) throw new Error("KG 未登录，无法创建歌单");
+  const name = String(params.name ?? "").trim();
+  if (!name) throw new Error("KG 歌单名不能为空");
+
+  const clienttime = Math.floor(Date.now() / 1000);
+  const response = await kgGatewayRequest<{ data?: { listid?: number | string } }>(
+    "/cloudlist.service/v5/add_list",
+    {
+      method: "POST",
+      params: {
+        last_time: clienttime,
+        last_area: "gztx",
+        userid: session.userid,
+        token: session.token,
+      },
+      data: {
+        userid: session.userid,
+        token: session.token,
+        total_ver: 0,
+        name,
+        type: 0,
+        source: 1,
+        is_pri: params.private ? 1 : 0,
+        list_create_userid: session.userid,
+        list_create_listid: 0,
+        list_create_gid: "",
+        from_shupinmv: 0,
+      },
+    },
+  );
+
+  return { code: 200, listid: response.data?.listid ?? null };
+};

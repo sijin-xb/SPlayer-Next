@@ -11,6 +11,10 @@ vi.mock("localforage", () => ({
   default: { createInstance: () => cache },
 }));
 
+vi.mock("@/stores/settings", () => ({
+  useSettingsStore: () => ({ system: { system: { onlinePlatform: "netease" } } }),
+}));
+
 import { useUserStore } from "./user";
 
 const profile = { userId: 1, nickname: "测试用户" };

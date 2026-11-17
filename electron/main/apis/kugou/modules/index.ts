@@ -20,6 +20,7 @@ import userHistory from "./user_history";
 import artistFollow from "./artist_follow";
 import playhistoryUpload from "./playhistory";
 import { cloudDelete, cloudList, cloudUrl } from "./user_cloud";
+import { playlistAddSongs, playlistCreate } from "./playlist_edit";
 
 export const modules: Record<string, KGModule> = {
   lyric,
@@ -42,4 +43,6 @@ export const modules: Record<string, KGModule> = {
   user_cloud: cloudList,
   user_cloud_del: cloudDelete,
   user_cloud_url: cloudUrl,
+  playlist_add_songs: playlistAddSongs,
+  playlist_create: playlistCreate,
 };

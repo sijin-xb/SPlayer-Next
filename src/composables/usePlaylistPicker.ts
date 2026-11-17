@@ -1,6 +1,8 @@
 import type { Track } from "@shared/types/player";
 import type { ContentScope } from "@/types/collection";
+import { isPlatform } from "@shared/types/platform";
 import { useUserStore } from "@/stores/user";
+import { useSettingsStore } from "@/stores/settings";
 import { toast } from "@/composables/useToast";
 
 /**
@@ -9,7 +11,17 @@ import { toast } from "@/composables/useToast";
  */
 export const usePlaylistPicker = () => {
   const user = useUserStore();
+  const settings = useSettingsStore();
   const { t } = useI18n();
+
+  /**
+   * 当前在线平台是否已登录
+   * @returns 网易云看登录态，其余平台看是否已载入歌单
+   */
+  const isOnlineLoggedIn = (): boolean =>
+    settings.system.system.onlinePlatform === "netease"
+      ? user.isLoggedIn
+      : user.playlists.length > 0;
 
   /** 弹窗开关 */
   const open = ref(false);
@@ -24,8 +36,8 @@ export const usePlaylistPicker = () => {
    */
   const openPicker = (items: Track[]): void => {
     if (items.length === 0) return;
-    const scope: ContentScope = items[0].source === "netease" ? "online" : "local";
-    if (scope === "online" && !user.isLoggedIn) {
+    const scope: ContentScope = isPlatform(items[0].source) ? "online" : "local";
+    if (scope === "online" && !isOnlineLoggedIn()) {
       toast.warning(t("liked.toast.needLogin"));
       return;
     }

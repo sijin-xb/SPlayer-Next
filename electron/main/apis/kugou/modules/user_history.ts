@@ -37,7 +37,10 @@ const userHistory: KGModule = async (params) => {
   });
 
   const list = response.data?.info ?? response.data?.songs ?? response.songs ?? [];
-  const songs: KGSong[] = list.map((item) => normalizeKGSong(item as never));
+  // 无 hash 的条目无法解析播放地址，直接丢弃
+  const songs: KGSong[] = list
+    .map((item) => normalizeKGSong(item as never))
+    .filter((song) => Boolean(song.hash));
 
   return { code: 200, songs };
 };

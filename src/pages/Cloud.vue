@@ -5,6 +5,7 @@ import type { PlaybackContext } from "@shared/types/player";
 import type { DropdownMenuItem } from "@/components/ui/SDropdownMenu.vue";
 import { useUserStore } from "@/stores/user";
 import { useSettingsStore } from "@/stores/settings";
+import { useDataStore } from "@/stores/data";
 import SongList from "@/components/list/SongList.vue";
 import { formatFileSize } from "@/utils/format";
 import * as player from "@/core/player";
@@ -17,9 +18,18 @@ import IconLucideCloudUpload from "~icons/lucide/cloud-upload";
 const { t } = useI18n();
 const user = useUserStore();
 const settings = useSettingsStore();
+const data = useDataStore();
 
 /** 云盘页当前所属平台，决定列表项的来源标识 */
 const cloudSource = computed(() => settings.system.system.onlinePlatform);
+
+/** 当前平台是否已登录，酷狗以云盘列表是否可读为准 */
+const cloudLoggedIn = computed(() =>
+  cloudSource.value === "netease" ? user.isLoggedIn : data.isActivePlatformLoggedIn,
+);
+
+/** 上传仅网易云支持，酷狗暂无上传实现 */
+const uploadSupported = computed(() => cloudSource.value === "netease");
 
 const playbackContext = computed<PlaybackContext>(() => ({
   originId: "cloud",
@@ -64,7 +74,7 @@ const handleMoreMenu = (key: string): void => {
 };
 
 watch(
-  () => user.isLoggedIn,
+  () => cloudLoggedIn.value,
   (loggedIn) => {
     if (loggedIn) user.ensureCloud();
   },
@@ -82,7 +92,7 @@ watch(
             {{ t("cloud.title") }}
           </h1>
           <div
-            v-if="user.isLoggedIn && trackCount > 0"
+            v-if="cloudLoggedIn && trackCount > 0"
             class="flex items-center gap-4 text-sm text-on-surface-variant/50 truncate"
           >
             <span class="flex items-center gap-1">
@@ -121,7 +131,7 @@ watch(
           <SButton
             variant="secondary"
             round
-            :disabled="!user.isLoggedIn"
+            :disabled="!cloudLoggedIn || !uploadSupported"
             @click="uploadDialogOpen = true"
           >
             <template #icon>
@@ -131,7 +141,7 @@ watch(
           </SButton>
           <SDropdownMenu :items="moreMenuItems" align="start" @select="handleMoreMenu">
             <template #trigger>
-              <SButton variant="secondary" circle :disabled="!user.isLoggedIn">
+              <SButton variant="secondary" circle :disabled="!cloudLoggedIn">
                 <template #icon>
                   <IconLucideEllipsis />
                 </template>
@@ -156,7 +166,7 @@ watch(
     <!-- 列表 -->
     <Transition name="fade" mode="out-in" :duration="150">
       <!-- 未登录 -->
-      <div v-if="!user.isLoggedIn" key="login" class="flex-1 flex items-center justify-center">
+      <div v-if="!cloudLoggedIn" key="login" class="flex-1 flex items-center justify-center">
         <div class="text-center text-on-surface-variant/50">
           <IconLucideCloud class="size-12 mx-auto mb-3 opacity-30" />
           <div class="text-sm">{{ t("cloud.needLogin") }}</div>

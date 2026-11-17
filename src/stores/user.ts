@@ -23,6 +23,8 @@ import {
   setKugouArtistFollow as setKugouArtistFollowApi,
 } from "@/apis/user/kugou";
 import { fetchKugouCloudTracks } from "@/apis/cloud/kugou";
+import { kugouCall } from "@/apis/kugou";
+import { queue } from "@/stores/queue";
 import { useSettingsStore } from "@/stores/settings";
 import {
   fetchPlaylist,
@@ -634,6 +636,15 @@ export const useUserStore = defineStore(
      * @param privacy - 歌单隐私设置，0 为公开，10 为私密
      */
     const createPlaylist = async (name: string, privacy: 0 | 10 = 0): Promise<Playlist> => {
+      if (useSettingsStore().system.system.onlinePlatform === "kugou") {
+        const created = await kugouCall<{ listid?: string | number }>("playlist_create", {
+          name,
+          private: privacy === 10,
+        });
+        await loadKugouContent();
+        const found = playlists.value.find((item) => String(item.id) === String(created.listid));
+        return found ?? { id: String(created.listid ?? ""), name, trackCount: 0, owner: "" };
+      }
       const created = await apiCreatePlaylist(name, privacy);
       await refreshPlaylists();
       return created;
@@ -673,6 +684,24 @@ export const useUserStore = defineStore(
      * @returns 成功添加的曲目数量
      */
     const addTracksToPlaylist = async (playlistId: string, trackIds: string[]): Promise<number> => {
+      if (useSettingsStore().system.system.onlinePlatform === "kugou") {
+        const lookup = new Map<string, Track>();
+        for (const track of [...likedPlaylistTracks.value, ...queue.value]) {
+          lookup.set(track.id, track);
+        }
+        const songs = [...new Set(trackIds)].map((id) => {
+          const track = lookup.get(id);
+          return {
+            name: track?.title ?? "",
+            hash: id,
+            albumId: Number(track?.album?.id ?? 0),
+            mixsongid: Number(track?.extId ?? 0),
+          };
+        });
+        await kugouCall("playlist_add_songs", { listid: playlistId, songs });
+        await loadKugouContent();
+        return songs.length;
+      }
       const version = accountVersion;
       if (playlistId === likedPlaylistId.value) {
         const ids = [...new Set(trackIds)];

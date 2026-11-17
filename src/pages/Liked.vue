@@ -6,6 +6,7 @@ import type { ContentScope } from "@/types/collection";
 import type { DropdownMenuItem } from "@/components/ui/SDropdownMenu.vue";
 import { useLibraryStore } from "@/stores/library";
 import { useUserStore } from "@/stores/user";
+import { useSettingsStore } from "@/stores/settings";
 import { useStatusStore } from "@/stores/status";
 import SongList from "@/components/list/SongList.vue";
 import * as player from "@/core/player";
@@ -15,6 +16,15 @@ import IconLucideRefreshCw from "~icons/lucide/refresh-cw";
 const { t } = useI18n();
 const library = useLibraryStore();
 const user = useUserStore();
+const settings = useSettingsStore();
+
+/** 当前在线平台，决定列表来源与登录判断 */
+const onlineSource = computed(() => settings.system.system.onlinePlatform);
+
+/** 当前平台是否已登录 */
+const onlineLoggedIn = computed(() =>
+  onlineSource.value === "netease" ? user.isLoggedIn : user.playlists.length > 0,
+);
 const status = useStatusStore();
 
 /** 当前 tab */
@@ -195,7 +205,7 @@ const handleMoreMenu = (key: string): void => {
       </div>
       <!-- 在线 tab -->
       <div
-        v-else-if="tab === 'online' && !user.isLoggedIn"
+        v-else-if="tab === 'online' && !onlineLoggedIn"
         key="online-login"
         class="flex-1 flex items-center justify-center"
       >
@@ -213,7 +223,7 @@ const handleMoreMenu = (key: string): void => {
           ref="songListRef"
           :items="user.likedPlaylistTracks"
           :search-query="searchQuery"
-          source="netease"
+          :source="onlineSource"
           :collection-id="user.likedPlaylistId ?? undefined"
           :playback-context="playbackContext"
           collection-type="playlist"

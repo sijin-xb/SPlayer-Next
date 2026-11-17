@@ -3,6 +3,7 @@ defineOptions({ name: "Favorites" });
 
 import type { CoverItem } from "@/types/artist";
 import { useUserStore } from "@/stores/user";
+import { useSettingsStore } from "@/stores/settings";
 import {
   albumsToCoverItems,
   artistsToCoverItems,
@@ -18,6 +19,15 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const user = useUserStore();
+const settings = useSettingsStore();
+
+/** 当前在线平台 */
+const onlinePlatform = computed(() => settings.system.system.onlinePlatform);
+
+/** 当前平台是否已登录 */
+const onlineLoggedIn = computed(() =>
+  onlinePlatform.value === "netease" ? user.isLoggedIn : user.playlists.length > 0,
+);
 
 type FavTab = "playlist" | "album" | "artist";
 
@@ -98,7 +108,7 @@ const handleClick = (item: CoverItem): void => {
         </h1>
         <Transition name="fade" mode="out-in">
           <span
-            v-if="user.isLoggedIn"
+            v-if="onlineLoggedIn"
             :key="activeTab"
             class="flex items-center gap-1.5 text-sm text-on-surface-variant/50 truncate"
           >
@@ -110,7 +120,7 @@ const handleClick = (item: CoverItem): void => {
       <STabs :model-value="activeTab" :tabs="tabs" @update:model-value="onTabSwitch" />
     </div>
     <!-- 未登录 -->
-    <div v-if="!user.isLoggedIn" class="flex-1 flex items-center justify-center">
+    <div v-if="!onlineLoggedIn" class="flex-1 flex items-center justify-center">
       <div class="text-center text-on-surface-variant/60">
         <IconMaterialSymbolsFavoriteOutline class="size-12 mx-auto mb-3 opacity-30" />
         <div class="text-sm">{{ t("favorites.notLogin") }}</div>

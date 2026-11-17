@@ -186,7 +186,9 @@ const navItems = computed<SMenuItem[]>(() => {
       const entry = SIDEBAR_NAV_META[key];
       if (!entry || isNavFeatureOff(entry, systemSettings)) continue;
       const item: SMenuItem = { key, label: t(entry.labelKey), icon: markRaw(entry.icon) };
-      if (key === "/liked") item.trailing = renderHeartModeTrailing;
+      if (key === "/liked" && systemSettings.system.onlinePlatform === "netease") {
+        item.trailing = renderHeartModeTrailing;
+      }
       if (key === "/download" && downloadStore.activeCount > 0)
         item.trailing = renderDownloadTrailing;
       items.push(item);

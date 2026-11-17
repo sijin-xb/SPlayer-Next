@@ -131,6 +131,9 @@ export const useUserStore = defineStore(
     let likedPlaylistAbort: AbortController | null = null;
 
     /** 云盘曲目 */
+    /** 酷狗听歌排行，独立于「我喜欢的音乐」 */
+    const kugouHistory = shallowRef<Track[]>([]);
+
     const cloudTracks = shallowRef<Track[]>([]);
     /** 云盘曲目总数（服务端返回，可能 > tracks.length 在拉取过程中） */
     const cloudCount = ref(0);
@@ -839,16 +842,23 @@ export const useUserStore = defineStore(
      * 仅在当前平台为酷狗时调用，网易云链路完全不受影响
      */
     const loadKugouContent = async (): Promise<void> => {
-      const [listResult, historyResult] = await Promise.allSettled([
-        fetchKugouUserPlaylists(),
-        fetchKugouUserHistory(),
-      ]);
-      if (listResult.status === "fulfilled") playlists.value = listResult.value;
-      if (historyResult.status === "fulfilled") likedPlaylistTracks.value = historyResult.value;
-      for (const result of [listResult, historyResult]) {
-        if (result.status === "rejected") {
-          console.warn("[user] kugou content load failed:", result.reason);
-        }
+      const listResult = await fetchKugouUserPlaylists().catch((error) => {
+        console.warn("[user] kugou playlists load failed:", error);
+        return [] as Playlist[];
+      });
+      playlists.value = listResult;
+      void loadKugouHistory();
+    };
+
+    /**
+     * 单独加载酷狗听歌排行
+     * 与「我喜欢的音乐」无关，只在听歌排行入口使用
+     */
+    const loadKugouHistory = async (): Promise<void> => {
+      try {
+        kugouHistory.value = await fetchKugouUserHistory();
+      } catch (error) {
+        console.warn("[user] kugou history load failed:", error);
       }
     };
 
@@ -889,8 +899,10 @@ export const useUserStore = defineStore(
       invalidateSession,
       logout,
       loadKugouContent,
+      loadKugouHistory,
       clearSharedContent,
       setKugouFollow,
+      kugouHistory,
 
       playlists,
       likedSongIds,

@@ -205,6 +205,16 @@ const handleMoreMenu = (key: string): void => {
       </div>
       <!-- 在线 tab -->
       <div
+        v-else-if="tab === 'online' && onlineSource !== 'netease'"
+        key="online-unsupported"
+        class="flex-1 flex items-center justify-center"
+      >
+        <div class="text-center text-on-surface-variant/50">
+          <IconMaterialSymbolsFavoriteOutlineRounded class="size-12 mx-auto mb-3 opacity-30" />
+          <div class="text-sm">{{ t("liked.unsupportedPlatform") }}</div>
+        </div>
+      </div>
+      <div
         v-else-if="tab === 'online' && !onlineLoggedIn"
         key="online-login"
         class="flex-1 flex items-center justify-center"

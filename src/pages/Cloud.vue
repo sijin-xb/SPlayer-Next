@@ -28,9 +28,6 @@ const cloudLoggedIn = computed(() =>
   cloudSource.value === "netease" ? user.isLoggedIn : data.isActivePlatformLoggedIn,
 );
 
-/** 上传仅网易云支持，酷狗暂无上传实现 */
-const uploadSupported = computed(() => cloudSource.value === "netease");
-
 const playbackContext = computed<PlaybackContext>(() => ({
   originId: "cloud",
   originType: "page",
@@ -131,7 +128,7 @@ watch(
           <SButton
             variant="secondary"
             round
-            :disabled="!cloudLoggedIn || !uploadSupported"
+            :disabled="!cloudLoggedIn"
             @click="uploadDialogOpen = true"
           >
             <template #icon>

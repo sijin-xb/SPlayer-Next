@@ -54,7 +54,7 @@ const userPlaylist: KGModule = async (params) => {
   const info = response.data?.info ?? [];
   const playlists: KGPlaylistItem[] = info
     .map((raw) => ({
-      id: String(raw.listid ?? raw.global_collection_id ?? ""),
+      id: String(raw.global_collection_id ?? raw.listid ?? ""),
       name: decodeName(raw.name ?? raw.listname ?? ""),
       cover: fillCover(raw.pic ?? raw.img, 300),
       creator: decodeName(raw.nickname ?? ""),

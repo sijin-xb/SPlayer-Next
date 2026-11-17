@@ -2,6 +2,8 @@ import { ipcMain, dialog } from "electron";
 import path from "node:path";
 import { stat } from "node:fs/promises";
 import { uploadCloudSong } from "@main/services/cloudUpload";
+import { uploadToKugouCloud } from "@main/services/kugouCloudUpload";
+import { store } from "@main/store";
 import { cloudLog } from "@main/utils/logger";
 import { AUDIO_EXTENSIONS } from "@shared/types/cloudUpload";
 import type { CloudUploadProgress, CloudUploadResult, PickedSong } from "@shared/types/cloudUpload";
@@ -37,6 +39,10 @@ export const registerCloudIpc = (): void => {
     async (event, filePath: string, uploadId: string): Promise<CloudUploadResult> => {
       let lastEmit = 0;
       try {
+        if (store.get("system.onlinePlatform") === "kugou") {
+          const result = await uploadToKugouCloud(filePath);
+          return { success: result.ok, instant: Boolean(result.matched) };
+        }
         const res = await uploadCloudSong(filePath, ({ stage, loaded, total }) => {
           const now = Date.now();
           // uploading 中间帧节流;首帧(loaded 为 0)与完成帧(loaded≥total)始终放行

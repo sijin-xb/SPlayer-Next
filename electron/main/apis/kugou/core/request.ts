@@ -9,6 +9,7 @@
 import { KG_GATEWAY_URL, getKgAppid, getKgClientver } from "./config";
 import { cleanKgResponse, getDeviceMid, signatureAndroidParams } from "./crypto";
 import { getSessionCookies } from "@main/database/sessions";
+import { coreLog } from "@main/utils/logger";
 
 interface FetchOptions {
   headers?: Record<string, string>;
@@ -152,6 +153,11 @@ export const kgGatewayRequest = async <T = KGRawBody>(
 
   const code = body.error_code ?? body.errcode ?? body.err_code ?? 0;
   if (code !== 0 && code !== 200) {
+    coreLog.warn(`[kg-req] ${path} code=${code}`, {
+      params: mergedParams,
+      body: serializedData,
+      response: body,
+    });
     throw new Error(
       `KG Gateway API error: code=${code}, msg=${body.msg || body.errmsg || body.error_msg || body.error || "unknown"}`,
     );

@@ -33,6 +33,13 @@ const NON_CACHEABLE = new Set([
   "user_detail",
   "song_url",
   "comment",
+  "user_playlist",
+  "user_playlist_tracks",
+  "user_history",
+  "user_cloud",
+  "user_cloud_url",
+  "everyday_recommend",
+  "playhistory_upload",
 ]);
 
 interface CacheEntry {
@@ -94,7 +101,7 @@ export const callKugou = async <T = unknown>(name: string, params: KGParams = {}
 
   if (NON_CACHEABLE.has(name)) return (await fn(params)) as T;
 
-  const key = `${name}|${hashParams(params)}`;
+  const key = `${name}|${getSessionCookies("kugou").userid ?? "anon"}|${hashParams(params)}`;
   const hit = cacheGet(key);
   if (hit !== undefined) return hit as T;
 

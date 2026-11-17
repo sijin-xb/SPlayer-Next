@@ -29,7 +29,7 @@ interface PrivilegeData {
 }
 
 const extractUrls = (response: Record<string, unknown>): string[] =>
-  [response.url, response.backup_url]
+  [response.url, response.backup_url, response.backupUrl]
     .flatMap((value) => (Array.isArray(value) ? value : [value]))
     .filter((value): value is string => typeof value === "string" && value.length > 0);
 
@@ -96,6 +96,7 @@ const requestUrl = async (
       cmd: 26,
       pidversion: 3001,
       IsFreePart: freePart ? 1 : 0,
+      vipType: Number(getSessionCookies("kugou").vip_type ?? 0),
       ppage_id: concept ? "356753938,823673182,967485191" : "463467626,350369493,788954147",
       cdnBackup: 1,
       module: "",

@@ -4,7 +4,7 @@ import { ipcMain } from "electron";
 import { clearNeteaseCookies, mergeNeteaseCookies } from "@main/apis/netease";
 import { cookieToJson } from "@main/apis/netease/core/cookie";
 import { clearQQMusicCookies, mergeQQMusicCookies } from "@main/apis/qqmusic";
-import { clearKugouSession, mergeKugouSession } from "@main/apis/kugou";
+import { clearKugouCache, clearKugouSession, mergeKugouSession } from "@main/apis/kugou";
 import { openNeteaseLoginWindow } from "@main/window/login";
 import { coreLog } from "@main/utils/logger";
 import type { ApiPlatform } from "@shared/types/apis";
@@ -24,7 +24,10 @@ export const registerApisIpc = (): void => {
   ipcMain.handle("apis:clearSession", (_evt, platform: ApiPlatform) => {
     if (platform === "netease") clearNeteaseCookies();
     if (platform === "qqmusic") clearQQMusicCookies();
-    if (platform === "kugou") clearKugouSession();
+    if (platform === "kugou") {
+      clearKugouSession();
+      clearKugouCache();
+    }
   });
 
   /** 打开官方网页登录，成功后把 cookies 合并写入 session */

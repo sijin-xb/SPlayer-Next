@@ -6,6 +6,7 @@ import { ALL_PLATFORMS, PLATFORM_SHORT_NAME, type Platform } from "@shared/types
 import type { CoverItem } from "@/types/artist";
 import { searchSongs, searchAlbums, searchArtists, searchPlaylists } from "@/apis/search";
 import { useStatusStore } from "@/stores/status";
+import { useDataStore } from "@/stores/data";
 import { usePluginsStore } from "@/stores/plugins";
 import { navigateToAlbum, navigateToArtist, navigateToPlaylist } from "@/utils/navigate";
 
@@ -13,6 +14,7 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const status = useStatusStore();
+const data = useDataStore();
 const plugins = usePluginsStore();
 
 type TabKey = "songs" | "albums" | "artists" | "playlists";
@@ -81,6 +83,15 @@ const isPluginTab = computed(
     (route.query.platform === "plugin" || !!pluginSelection.value),
 );
 const selectedPlatform = computed(() => (isPluginTab.value ? "plugin" : status.searchPlatform));
+
+// 当前在线平台变化时，搜索来源跟随切换
+watch(
+  () => data.activePlatform(),
+  (platform) => {
+    if (!isPluginTab.value) status.searchPlatform = platform;
+  },
+  { immediate: true },
+);
 const searchSource = computed(() =>
   isPluginTab.value ? selectedSource.value || "plugin" : status.searchPlatform,
 );

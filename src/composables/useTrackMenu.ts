@@ -1,5 +1,6 @@
 import type { Ref } from "vue";
 import type { PlaybackContext, Track } from "@shared/types/player";
+import { isPlatform } from "@shared/types/platform";
 import type { QualityLevel } from "@/utils/quality";
 import type { CollectionType } from "@/types/collection";
 import type { DropdownMenuItem } from "@/components/ui/SDropdownMenu.vue";
@@ -77,7 +78,7 @@ export const useTrackMenu = (
     const isLocal = source === "local";
     const isCue = !!track.value?.cuePath;
     const showCloudRemove = isCloudView && track.value?.cloud === true;
-    const canAddToPlaylist = source === "local" || source === "netease";
+    const canAddToPlaylist = source === "local" || isPlatform(source);
     const isOnline = !!getTrackShareUrl(track.value);
     const base: DropdownMenuItem[] = [
       { key: "play", label: t("songList.context.play"), icon: markRaw(IconPlay), show: showPlay },

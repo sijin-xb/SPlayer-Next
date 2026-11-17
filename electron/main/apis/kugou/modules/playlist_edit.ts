@@ -58,6 +58,34 @@ export const playlistAddSongs: KGModule = async (params) => {
 };
 
 /**
+ * 从歌单删除歌曲
+ * @param params - listid 目标歌单，fileids 歌单内 fileid 数组
+ * @returns 操作结果
+ */
+export const playlistDeleteSongs: KGModule = async (params) => {
+  const session = getSessionCookies("kugou");
+  if (!session.token || !session.userid) throw new Error("KG 未登录，无法编辑歌单");
+  const listid = String(params.listid ?? "");
+  const fileids = params.fileids as number[] | undefined;
+  if (!listid || !fileids?.length) throw new Error("KG 删除歌单歌曲缺少参数");
+
+  await kgGatewayRequest("/v4/delete_songs", {
+    method: "POST",
+    headers: { "x-router": "cloudlist.service.kugou.com" },
+    data: {
+      listid,
+      userid: session.userid,
+      data: fileids.map((fileid) => ({ fileid: Number(fileid) })),
+      type: 0,
+      token: session.token,
+      list_ver: 0,
+    },
+  });
+
+  return { code: 200 };
+};
+
+/**
  * 创建歌单
  * @param params - name 歌单名，private 是否私密
  * @returns 新歌单标识

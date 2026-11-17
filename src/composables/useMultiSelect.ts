@@ -1,5 +1,6 @@
 import type { Ref } from "vue";
 import type { PlaybackContext, Track, TrackSource } from "@shared/types/player";
+import { isPlatform } from "@shared/types/platform";
 import type { CollectionType } from "@/types/collection";
 import { usePlaylistStore } from "@/stores/playlist";
 import { useLibraryStore } from "@/stores/library";
@@ -129,7 +130,7 @@ export const useMultiSelect = (items: Ref<Track[]>, options: MultiSelectOptions)
       } else if (options.collectionId.value) {
         if (options.source.value === "local") {
           await playlistStore.removeTracks(options.collectionId.value, ids);
-        } else if (options.source.value === "netease") {
+        } else if (isPlatform(options.source.value)) {
           await userStore.removeTracksFromPlaylist(options.collectionId.value, ids);
         }
       }

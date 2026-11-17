@@ -737,6 +737,17 @@ export const useUserStore = defineStore(
       playlistId: string,
       trackIds: string[],
     ): Promise<void> => {
+      if (useSettingsStore().system.system.onlinePlatform === "kugou") {
+        const fileids = [...new Set(trackIds)]
+          .map((id) => Number(id))
+          .filter((id) => Number.isFinite(id) && id > 0);
+        if (fileids.length === 0) {
+          throw new Error("酷狗歌单曲目缺少 fileid，暂无法从歌单移除");
+        }
+        await kugouCall("playlist_delete_songs", { listid: playlistId, fileids });
+        await loadKugouContent();
+        return;
+      }
       const version = accountVersion;
       if (playlistId === likedPlaylistId.value) {
         try {

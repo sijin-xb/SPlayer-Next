@@ -1,6 +1,7 @@
 import type { KGModule } from "../core/types";
 import { getSessionCookies } from "@main/database/sessions";
 import { kgGatewayRequest } from "../core/request";
+import { encryptKugouDeviceData, rsaEncryptKugouPkcs1, signParamsKey } from "../core/crypto";
 
 interface SongRef {
   name?: string;
@@ -124,4 +125,41 @@ export const playlistCreate: KGModule = async (params) => {
   );
 
   return { code: 200, listid: response.data?.listid ?? null };
+};
+
+/**
+ * 取消收藏歌单（移除账号下收藏的列表，listid 来自用户歌单里的收藏条目）
+ * 请求规格对齐 kugou-tui 的 KAT：AES 密文 body 参与 android 签名，
+ * p 为 RSA 包装的 {aes, uid, token}，路由经 x-router 指向 cloudlist
+ * @param params - listid 收藏列表的数字 id
+ * @returns 操作结果
+ */
+export const playlistUnsubscribe: KGModule = async (params) => {
+  const session = getSessionCookies("kugou");
+  if (!session.token || !session.userid) throw new Error("KG 未登录，无法取消收藏歌单");
+  const listid = Number(params.listid);
+  if (!listid) throw new Error("KG 取消收藏歌单缺少 listid");
+
+  const clienttime = Math.floor(Date.now() / 1000);
+  const enc = encryptKugouDeviceData({ listid, total_ver: 0, type: 1 });
+  await kgGatewayRequest("/v2/delete_list", {
+    method: "POST",
+    headers: {
+      "x-router": "cloudlist.service.kugou.com",
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    params: {
+      key: signParamsKey(String(clienttime)),
+      last_area: "gztx",
+      last_time: clienttime,
+      p: rsaEncryptKugouPkcs1({
+        aes: enc.key,
+        uid: session.userid,
+        token: session.token,
+      }).toUpperCase(),
+    },
+    data: enc.content,
+  });
+
+  return { code: 200 };
 };

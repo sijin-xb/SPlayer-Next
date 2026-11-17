@@ -156,13 +156,17 @@ const handlePlayAll = () => {
   player.playFrom(artist.value.tracks, { context: playbackContext.value });
 };
 
-/** 收藏歌手仅支持 NCM */
-const canSubscribeArtist = computed(() => artist.value?.source === "netease");
+/** 收藏/关注歌手：网易走收藏列表，酷狗走 artist_follow */
+const canSubscribeArtist = computed(
+  () => artist.value?.source === "netease" || artist.value?.source === "kugou",
+);
 
 /** 当前歌手是否已收藏（依据用户收藏歌手列表） */
 const isArtistSubscribed = computed(() => {
   const current = artist.value;
-  if (!current || current.source !== "netease") return false;
+  if (!current) return false;
+  if (current.source === "kugou") return userStore.kugouFollowedIds.has(String(current.id));
+  if (current.source !== "netease") return false;
   return userStore.artists.some((item) => String(item.id) === String(current.id));
 });
 
@@ -171,10 +175,16 @@ const artistSubBusy = ref(false);
 
 const handleToggleSubscribe = async (): Promise<void> => {
   const current = artist.value;
-  if (!current || current.source !== "netease" || artistSubBusy.value) return;
+  if (!current || artistSubBusy.value) return;
+  if (current.source !== "netease" && current.source !== "kugou") return;
   artistSubBusy.value = true;
   try {
-    await userStore.toggleArtistSubscribe(current.id, !isArtistSubscribed.value);
+    const next = !isArtistSubscribed.value;
+    if (current.source === "kugou") {
+      await userStore.setKugouFollow(current.id, next);
+    } else {
+      await userStore.toggleArtistSubscribe(current.id, next);
+    }
   } catch (err) {
     toast.error(err instanceof Error && err.message ? err.message : t("liked.toast.failed"));
   } finally {

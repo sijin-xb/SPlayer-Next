@@ -120,7 +120,7 @@ const myPlaylistItems = computed<SMenuItem[]>(() => {
         showCover,
       }))
     : userStore.createdPlaylists.slice(1).map((pl) => ({
-        key: `/collection/netease/playlist/${pl.id}`,
+        key: `/collection/${systemSettings.system.onlinePlatform}/playlist/${pl.id}`,
         label: pl.name,
         icon: markRaw(IconLucideListMusic),
         cover: pl.cover ?? "",
@@ -137,7 +137,7 @@ const subscribedItems = computed<SMenuItem[]>(() => {
   const showCover = appearance.sidebarPlaylistCover;
   const hidden = hiddenKeys.value;
   const items: SMenuItem[] = userStore.subscribedPlaylists.map((pl) => ({
-    key: `/collection/netease/playlist/${pl.id}`,
+    key: `/collection/${systemSettings.system.onlinePlatform}/playlist/${pl.id}`,
     label: pl.name,
     icon: markRaw(IconLucideListMusic),
     cover: pl.cover ?? "",
@@ -332,7 +332,8 @@ watch(
     const existing = new Set<string>();
     for (const pl of localLists) existing.add(`/collection/local/playlist/${pl.id}`);
     if (onlineLists && onlineLists.length > 0) {
-      for (const pl of onlineLists) existing.add(`/collection/netease/playlist/${pl.id}`);
+      for (const pl of onlineLists)
+        existing.add(`/collection/${systemSettings.system.onlinePlatform}/playlist/${pl.id}`);
     }
     if (existing.size === 0) return;
     prunePlaylistArchive(existing);

@@ -20,7 +20,12 @@ import userHistory from "./user_history";
 import artistFollow from "./artist_follow";
 import playhistoryUpload from "./playhistory";
 import { cloudDelete, cloudList, cloudUrl } from "./user_cloud";
-import { playlistAddSongs, playlistCreate, playlistDeleteSongs } from "./playlist_edit";
+import {
+  playlistAddSongs,
+  playlistCreate,
+  playlistDeleteSongs,
+  playlistUnsubscribe,
+} from "./playlist_edit";
 import cloudMatch from "./user_cloud_match";
 import userPlaylistTracks from "./user_playlist_tracks";
 
@@ -48,6 +53,7 @@ export const modules: Record<string, KGModule> = {
   playlist_add_songs: playlistAddSongs,
   playlist_create: playlistCreate,
   playlist_delete_songs: playlistDeleteSongs,
+  playlist_unsubscribe: playlistUnsubscribe,
   user_cloud_match: cloudMatch,
   user_playlist_tracks: userPlaylistTracks,
 };

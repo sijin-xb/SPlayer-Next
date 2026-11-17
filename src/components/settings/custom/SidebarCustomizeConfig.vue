@@ -231,7 +231,7 @@ const myRows = computed(() => {
           title: pl.title,
         }))
       : userStore.createdPlaylists.slice(1).map((pl) => ({
-          key: `/collection/netease/playlist/${pl.id}`,
+          key: `/collection/${settings.system.system.onlinePlatform}/playlist/${pl.id}`,
           title: pl.name,
         }));
   return applySavedOrder(rows, playlistOrder.value[myOrderKey.value]);
@@ -241,7 +241,7 @@ const myRows = computed(() => {
 const subscribedRows = computed(() =>
   applySavedOrder(
     userStore.subscribedPlaylists.map((pl) => ({
-      key: `/collection/netease/playlist/${pl.id}`,
+      key: `/collection/${settings.system.system.onlinePlatform}/playlist/${pl.id}`,
       title: pl.name,
     })),
     playlistOrder.value.subscribed,

@@ -90,10 +90,11 @@ const countMeta = computed(() => {
 });
 
 const handleClick = (item: CoverItem): void => {
+  const platform = onlinePlatform.value;
   if (activeTab.value === "artist") {
-    router.push(`/artist/netease/${encodeURIComponent(item.id)}`);
+    router.push(`/artist/${platform}/${encodeURIComponent(item.id)}`);
   } else {
-    router.push(`/collection/netease/${activeTab.value}/${encodeURIComponent(item.id)}`);
+    router.push(`/collection/${platform}/${activeTab.value}/${encodeURIComponent(item.id)}`);
   }
 };
 </script>

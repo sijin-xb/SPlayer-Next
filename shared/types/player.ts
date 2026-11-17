@@ -68,6 +68,8 @@ export interface Playlist {
   owner?: string;
   /** 是否为账号的「我喜欢的音乐」，平台未标注时由调用方按位置兜底 */
   isLiked?: boolean;
+  /** 是否为收藏（来自他人）的歌单 */
+  collected?: boolean;
 }
 
 /** 音质信息 */

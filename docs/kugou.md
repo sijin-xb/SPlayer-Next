@@ -69,6 +69,19 @@ token 与登录时使用的 appid 绑定。标准版 token 调概念版接口返
 
 `useFavorite` 的 `isLiked` / `isSupported` / `toggle` 已覆盖 `kugou` 来源。
 
+### 关注歌手
+
+- `modules/artist_follow.ts`：`/followservice/v3/follow_singer` 与 `unfollow_singer`，参数 AES 加密 + RSA 包装
+- 歌手页关注按钮已按平台接通；已关注状态本地跟踪（酷狗无已关注列表接口），按账号持久化在 cacheDb
+
+### 歌单收藏（未完成）
+
+- 用户歌单用 `/v7/get_all_list` 的 `source` 区分：`1` 自建（含默认收藏/我喜欢）、`2` 收藏，写入 `Playlist.collected`，store 的自建/收藏列表按此分桶
+- 收藏路由按当前平台拼装（`/collection/:source/...`），此前硬编码 netease 导致酷狗歌单 404
+- 取消收藏端点已实现：`playlistUnsubscribe`（`/v2/delete_list`，规格对齐 kugou-tui KAT：AES 密文 body + RSA 包装 p + `x-router`）
+- 收藏端点未通：上游 `playlist_add.js` 的 `/cloudlist.service/v5/add_list` 带 `type=1` 实测恒 `20010`（type=0 新建可用），需抓包确认 collect-from-special 的真实参数；收藏按钮对酷狗保持隐藏
+- 专辑收藏端点未定位，按钮对酷狗隐藏
+
 ## 听歌上报
 
 - `modules/playhistory.ts`（`/playhistory/v1/upload_songs`），只在结算时提交一次
@@ -111,23 +124,25 @@ token 与登录时使用的 appid 绑定。标准版 token 调概念版接口返
 
 真实账号（概念版，VIP）实测：
 
-| 项         | 结果                                                                       |
-| ---------- | -------------------------------------------------------------------------- |
-| 用户歌单   | 3 个，`listid` 1/2/3，「我喜欢」430 首                                     |
-| 歌单曲目   | 分页 300/页，`relate_goods` 四档齐全                                       |
-| 每日推荐   | 30 首                                                                      |
-| 付费曲取流 | 完整 320k，`/yp/full/`，`isTrial:false`                                    |
-| 红心增删   | 430 → 431 → 430                                                            |
-| 听歌上报   | 上报后曲目出现在 `/playhistory/v1/get_songs`                               |
-| 用户资料   | `isVip:true`（`busi_vip` 中 `concept/tvip` 有效，`svip` 无效）             |
-| 播放       | 日志「加载成功」，URL 含 `ap3116`、`pi411`、`qu320`、`mx0`                 |
-| 云盘       | 五步分片上传后列表出现新曲目，取流与删除均成功                             |
-| 关注歌手   | `/followservice/v3/follow_singer` 与 unfollow 均返回 200                   |
-| 曲库匹配   | 命中时 `data` 为 `[[条目]]`，hash 在 `audio_info.hash`；未命中 `data:[{}]` |
+| 项         | 结果                                                                               |
+| ---------- | ---------------------------------------------------------------------------------- |
+| 用户歌单   | 3 个，`listid` 1/2/3，「我喜欢」430 首                                             |
+| 歌单曲目   | 分页 300/页，`relate_goods` 四档齐全                                               |
+| 每日推荐   | 30 首                                                                              |
+| 付费曲取流 | 完整 320k，`/yp/full/`，`isTrial:false`                                            |
+| 红心增删   | 430 → 431 → 430                                                                    |
+| 听歌上报   | 上报后曲目出现在 `/playhistory/v1/get_songs`                                       |
+| 用户资料   | `isVip:true`（`busi_vip` 中 `concept/tvip` 有效，`svip` 无效）                     |
+| 播放       | 日志「加载成功」，URL 含 `ap3116`、`pi411`、`qu320`、`mx0`                         |
+| 云盘       | 五步分片上传后列表出现新曲目，取流与删除均成功                                     |
+| 关注歌手   | `/followservice/v3/follow_singer` 与 unfollow 均返回 200                           |
+| 关注按钮   | 歌手页收藏/取关按钮闭环：状态 false → true → false                                 |
+| 曲库匹配   | 命中时 `data` 为 `[[条目]]`，hash 在 `audio_info.hash`；未命中 `data:[{}]`         |
+| 收藏歌单   | 「我的收藏」仅列 source=2 条目，点击打开 `/collection/kugou/playlist/:id` 正常加载 |
 
 秒传匹配的解析以曲库 hash 与本地文件 md5 一致为准；`hash` 字段在条目的 `audio_info` 内，顶层没有 `hash`。
 
-未验证：`/v2/get_res_privilege/lite` 返回的 `high` 档（账号非超级 VIP）；秒传完整命中链路（需与曲库逐字节相同的文件）。
+未验证：`/v2/get_res_privilege/lite` 返回的 `high` 档（账号非超级 VIP）；秒传完整命中链路（需与曲库逐字节相同的文件）；酷狗歌单收藏（`/cloudlist.service/v5/add_list` type=1 恒 20010，待抓包）。
 
 ## 已知风险
 

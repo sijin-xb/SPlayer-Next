@@ -61,6 +61,7 @@ const userPlaylist: KGModule = async (params) => {
       trackCount: Number(raw.count ?? 0),
       playCount: 0,
       isLiked: raw.is_def === 2,
+      collected: raw.source === 2,
     }))
     .filter((item) => item.id && item.name);
 

@@ -18,6 +18,17 @@ console.log(`检测到操作系统: ${platform}`);
 // 设置环境变量
 const env: NodeJS.ProcessEnv = { ...process.env };
 
+// 剥离宿主环境里强制 Electron 进入打包态的变量：
+// 外层工具链（如某些编辑器启动器）会 export ELECTRON_IS_DEV=0 /
+// ELECTRON_FORCE_IS_PACKAGED=true，被继承后 is.dev 恒为 false，
+// 主窗口会走 file:// 生产路径导致 ERR_FILE_NOT_FOUND 启动报错
+for (const key of ["ELECTRON_IS_DEV", "ELECTRON_FORCE_IS_PACKAGED"]) {
+  if (key in env) {
+    delete env[key];
+    console.log(`已移除干扰变量 ${key}`);
+  }
+}
+
 const startElectronVite = (): void => {
   console.log("正在启动 Electron Vite 开发服务器...");
 

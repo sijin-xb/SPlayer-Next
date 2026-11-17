@@ -13,6 +13,8 @@ import userDetail from "./user_detail";
 import { loginQrCheck, loginQrKey } from "./login_qr";
 import songUrl from "./song_url";
 import comment from "./comment";
+import everydayRecommend from "./everyday_recommend";
+import specialRecommend from "./special_recommend";
 
 export const modules: Record<string, KGModule> = {
   lyric,
@@ -26,4 +28,6 @@ export const modules: Record<string, KGModule> = {
   login_qr_check: loginQrCheck,
   song_url: songUrl,
   comment,
+  everyday_recommend: everydayRecommend,
+  special_recommend: specialRecommend,
 };

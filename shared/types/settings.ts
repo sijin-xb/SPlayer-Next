@@ -1,6 +1,7 @@
 import type { PluginsConfig, PluginQuality } from "./plugin";
 import type { HotkeyConfig } from "./hotkey";
 import type { DownloadLyricFormat, DownloadFolderScheme } from "./download";
+import type { Platform } from "./platform";
 
 /** 支持的语言代码 */
 export type LocaleCode = "zh-CN" | "en-US";
@@ -491,6 +492,8 @@ export interface SystemConfig {
     neteaseRealIp: boolean;
     /** KG 登录版本（standard 标准版 / concept 概念版） */
     kugouLoginVersion: KugouLoginVersion;
+    /** 当前使用的在线平台，账号态功能（每日推荐、我的）跟随此设置 */
+    onlinePlatform: Platform;
     /** 网络代理配置 */
     networkProxy: NetworkProxySettings;
     /** 听歌打卡开关 */

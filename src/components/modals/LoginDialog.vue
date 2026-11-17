@@ -1,28 +1,67 @@
 <script setup lang="ts">
 import { useUserStore } from "@/stores/user";
+import { useDataStore } from "@/stores/data";
+import { useSettingsStore } from "@/stores/settings";
 import { toast } from "@/composables/useToast";
 import { dialog } from "@/composables/useDialog";
 import { REPO_NAME } from "@/utils/config";
-import { neteaseQrLoginAdapter, syncNeteaseDeviceName } from "@/apis/login/netease";
+import { getPlatformAccountAdapter } from "@/apis/login/platform";
+import { syncNeteaseDeviceName } from "@/apis/login/netease";
+import { ALL_PLATFORMS, type Platform } from "@shared/types/platform";
 
 const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ "update:open": [value: boolean] }>();
 const { t } = useI18n();
 const user = useUserStore();
-const adapter = neteaseQrLoginAdapter;
+const dataStore = useDataStore();
+const settingsStore = useSettingsStore();
 const panelRef = useTemplateRef("panelRef");
 const loading = ref(false);
 const cookieDialogOpen = ref(false);
 
-const finishLogin = async (): Promise<boolean> => {
+const platform = ref<Platform>(dataStore.activePlatform());
+const adapter = computed(() => getPlatformAccountAdapter(platform.value).qrLogin!);
+const platformName = computed(() => getPlatformAccountAdapter(platform.value).displayName);
+
+watch(
+  () => props.open,
+  (open) => {
+    if (open) platform.value = dataStore.activePlatform();
+  },
+);
+
+const switchPlatform = (next: Platform): void => {
+  if (next === platform.value) return;
+  platform.value = next;
+  panelRef.value?.refresh();
+};
+
+const syncNeteaseProfile = async (): Promise<boolean> => {
   const ok = await user.fetchStatus();
-  if (ok) {
-    toast.success(t("login.success"));
-    emit("update:open", false);
-    return true;
+  if (!ok) return false;
+  const latest = await getPlatformAccountAdapter("netease").fetchProfile();
+  if (latest) dataStore.setPlatformProfile("netease", latest);
+  return true;
+};
+
+const finishLogin = async (): Promise<boolean> => {
+  const target = platform.value;
+  if (target === "netease") {
+    if (!(await syncNeteaseProfile())) {
+      toast.error(t("login.failed"));
+      return false;
+    }
+  } else {
+    const latest = await getPlatformAccountAdapter(target).fetchProfile();
+    if (!latest) {
+      toast.error(t("login.failed"));
+      return false;
+    }
+    dataStore.setPlatformProfile(target, latest);
   }
-  toast.error(t("login.failed"));
-  return false;
+  toast.success(t("login.success"));
+  emit("update:open", false);
+  return true;
 };
 
 const handleQrSuccess = async (): Promise<void> => {
@@ -46,17 +85,21 @@ const startAutoFetch = async (): Promise<void> => {
   loading.value = true;
   panelRef.value?.pause();
   try {
-    const result = await window.api.apis.openLoginWeb("netease");
+    const result = await window.api.apis.openLoginWeb(platform.value);
     if (!result.ok) {
       if (result.error !== "canceled") toast.error(t("login.failed"));
       panelRef.value?.resume();
       return;
     }
     if (!(await finishLogin())) void panelRef.value?.refresh();
-    else void syncNeteaseDeviceName();
+    else if (platform.value === "netease") void syncNeteaseDeviceName();
   } finally {
     loading.value = false;
   }
+};
+
+const setAsActive = async (): Promise<void> => {
+  await settingsStore.setSystem("system.onlinePlatform", platform.value);
 };
 
 const openManualCookie = (): void => {
@@ -77,9 +120,28 @@ const onCookieDialogOpen = (open: boolean): void => {
         <SLogo :size="48" />
         <div class="text-xl font-semibold text-on-surface">{{ REPO_NAME }}</div>
       </div>
+      <div class="flex items-center gap-1 rounded-full bg-on-surface/6 p-1">
+        <button
+          v-for="item in ALL_PLATFORMS"
+          :key="item"
+          type="button"
+          class="rounded-full px-3 py-1 text-xs transition-colors"
+          :class="
+            item === platform
+              ? 'bg-surface-panel text-on-surface shadow-sm'
+              : 'text-on-surface-variant/70 hover:text-on-surface'
+          "
+          @click="switchPlatform(item)"
+        >
+          {{ getPlatformAccountAdapter(item).displayName }}
+        </button>
+      </div>
+      <div class="text-xs text-on-surface-variant/60">
+        {{ t("login.platformHint", { name: platformName }) }}
+      </div>
       <QrLoginPanel
         ref="panelRef"
-        class="mt-4"
+        class="mt-1"
         :active="open"
         :adapter="adapter"
         @success="handleQrSuccess"
@@ -97,10 +159,20 @@ const onCookieDialogOpen = (open: boolean): void => {
       </div>
     </div>
     <template #footer="{ close }">
-      <SButton variant="tertiary" class="mx-auto" :disabled="loading" @click="close">
-        <template #icon><IconLucideX /></template>
-        {{ t("common.cancel") }}
-      </SButton>
+      <div class="flex items-center justify-center gap-2">
+        <SButton
+          v-if="platform !== dataStore.activePlatform()"
+          variant="secondary"
+          :disabled="loading"
+          @click="setAsActive"
+        >
+          {{ t("login.useThisPlatform", { name: platformName }) }}
+        </SButton>
+        <SButton variant="tertiary" :disabled="loading" @click="close">
+          <template #icon><IconLucideX /></template>
+          {{ t("common.cancel") }}
+        </SButton>
+      </div>
     </template>
   </SDialog>
   <LoginCookieDialog

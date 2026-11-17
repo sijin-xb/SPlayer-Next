@@ -1,7 +1,7 @@
 {
   "name": "splayer-next",
-  "productName": "SPlayer-Next",
-  "desktopName": "top.imsyy.splayer_next",
+  "productName": "SPlayer-Kugou",
+  "desktopName": "top.sijin.splayer_kugou",
   "version": "1.2.1",
   "description": "Cross-platform desktop music player with rich lyric support and wide audio format compatibility",
   "type": "module",
@@ -15,10 +15,10 @@
   "homepage": "https://splayer-next.imsyy.top",
   "repository": {
     "type": "git",
-    "url": "https://github.com/SPlayer-Dev/SPlayer-Next"
+    "url": "https://github.com/sijin-xb/SPlayer-Next"
   },
   "bugs": {
-    "url": "https://github.com/SPlayer-Dev/SPlayer-Next/issues"
+    "url": "https://github.com/sijin-xb/SPlayer-Next/issues"
   },
   "license": "AGPL-3.0",
   "license-file": "LICENSE",

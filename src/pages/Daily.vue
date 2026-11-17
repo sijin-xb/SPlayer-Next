@@ -5,7 +5,6 @@ import type { Track } from "@shared/types/player";
 import type { SSelectOption } from "@/components/ui/SSelect.vue";
 import type { DropdownMenuItem } from "@/components/ui/SDropdownMenu.vue";
 import { useDataStore } from "@/stores/data";
-import { useUserStore } from "@/stores/user";
 import SongList from "@/components/list/SongList.vue";
 import * as player from "@/core/player";
 import IconLucideRefreshCw from "~icons/lucide/refresh-cw";
@@ -13,7 +12,6 @@ import IconLucideListChecks from "~icons/lucide/list-checks";
 
 const { t, locale } = useI18n();
 const data = useDataStore();
-const user = useUserStore();
 
 /** 一天的视图模型 */
 interface DayView {
@@ -29,7 +27,7 @@ interface DayView {
 
 /** 今日 + 历史的可选天列表（今日在前） */
 const days = computed<DayView[]>(() => {
-  if (!user.isLoggedIn) return [];
+  if (!data.isActivePlatformLoggedIn) return [];
   const result: DayView[] = [];
   if (data.dailyRecommend.length > 0) {
     result.push({ key: "today", date: new Date(), tracks: data.dailyRecommend, isToday: true });
@@ -100,8 +98,8 @@ const handleMore = (key: string): void => {
 };
 
 watch(
-  () => user.isLoggedIn,
-  (loggedIn) => {
+  () => [data.isActivePlatformLoggedIn, data.activePlatform()] as const,
+  ([loggedIn]) => {
     if (!loggedIn) {
       loading.value = false;
       return;
@@ -175,7 +173,7 @@ watch(
               </SButton>
               <SDropdownMenu :items="moreMenuItems" align="start" @select="handleMore">
                 <template #trigger>
-                  <SButton variant="secondary" circle :disabled="!user.isLoggedIn">
+                  <SButton variant="secondary" circle :disabled="!data.isActivePlatformLoggedIn">
                     <template #icon>
                       <IconLucideEllipsis />
                     </template>
@@ -205,7 +203,11 @@ watch(
     <!-- 列表 -->
     <Transition name="fade" mode="out-in" :duration="150">
       <!-- 未登录 -->
-      <div v-if="!user.isLoggedIn" key="login" class="flex flex-1 items-center justify-center">
+      <div
+        v-if="!data.isActivePlatformLoggedIn"
+        key="login"
+        class="flex flex-1 items-center justify-center"
+      >
         <div class="text-center text-on-surface-variant/50">
           <IconLucideCalendarDays class="mx-auto mb-3 size-12 opacity-30" />
           <div class="text-sm">{{ t("daily.needLogin") }}</div>

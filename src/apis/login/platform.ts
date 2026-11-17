@@ -7,6 +7,11 @@ import {
   setQQMusicCookie,
 } from "./qqmusic";
 import { fetchKugouLoginStatus, kugouQrLoginAdapter, logoutKugou, setKugouCookie } from "./kugou";
+import {
+  fetchLoginStatus as fetchNeteaseLoginStatus,
+  logoutNetease,
+  neteaseQrLoginAdapter,
+} from "./netease";
 
 export type QrLoginState = "expired" | "waiting" | "scanned" | "success";
 
@@ -37,6 +42,22 @@ export interface PlatformAccountAdapter {
 }
 
 const adapters: Partial<Record<Platform, PlatformAccountAdapter>> = {
+  netease: {
+    displayName: "NCM",
+    userIdLabel: "UID",
+    fetchProfile: async (): Promise<PlatformProfile | null> => {
+      const profile = await fetchNeteaseLoginStatus();
+      if (!profile) return null;
+      return {
+        userId: String(profile.userId),
+        nickname: profile.nickname,
+        avatarUrl: profile.avatarUrl ?? "",
+        isVip: (profile.vipType ?? 0) !== 0,
+      };
+    },
+    logout: logoutNetease,
+    qrLogin: neteaseQrLoginAdapter,
+  },
   qqmusic: {
     displayName: "QM",
     userIdLabel: "UIN",

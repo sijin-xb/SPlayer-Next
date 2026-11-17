@@ -1,11 +1,14 @@
 import type { CoverItem } from "@/types/artist";
+import type { Platform } from "@shared/types/platform";
 import { useUserStore } from "@/stores/user";
+import { useDataStore } from "@/stores/data";
 import {
   fetchRecommendPlaylists,
   fetchRadarPlaylists,
   fetchArtists,
   fetchNewAlbums,
 } from "@/apis/recommend/netease";
+import { fetchKugouRecommendPlaylists } from "@/apis/recommend/kugou";
 
 /** 首页推荐内容缓存有效期 */
 const CACHE_TTL = 30 * 60 * 1000;
@@ -13,6 +16,7 @@ const CACHE_TTL = 30 * 60 * 1000;
 /** 首页推荐内容缓存 */
 interface DiscoverCache {
   at: number;
+  platform: Platform;
   loggedIn: boolean;
   recommend: CoverItem[];
   radar: CoverItem[];
@@ -39,6 +43,7 @@ const safe = (label: string, task: Promise<CoverItem[]>): Promise<CoverItem[]> =
 export const useHomeDiscover = () => {
   const { t } = useI18n();
   const user = useUserStore();
+  const data = useDataStore();
 
   /** 推荐歌单 / 专属歌单 */
   const recommendPlaylists = shallowRef<CoverItem[]>([]);
@@ -51,41 +56,63 @@ export const useHomeDiscover = () => {
 
   /** 推荐歌单标题 */
   const recommendTitle = computed(() =>
-    user.isLoggedIn ? t("home.recommend.title") : t("home.recommend.titleGuest"),
+    data.isActivePlatformLoggedIn ? t("home.recommend.title") : t("home.recommend.titleGuest"),
   );
   /** 推荐歌单副标题 */
   const recommendSubtitle = computed(() =>
-    user.isLoggedIn ? t("home.recommend.subtitle") : t("home.recommend.subtitleGuest"),
+    data.isActivePlatformLoggedIn
+      ? t("home.recommend.subtitle")
+      : t("home.recommend.subtitleGuest"),
   );
 
   /** 用缓存填充各区块 */
-  const apply = (data: DiscoverCache): void => {
-    recommendPlaylists.value = data.recommend;
-    radarPlaylists.value = data.radar;
-    artists.value = data.artists;
-    newAlbums.value = data.albums;
+  const apply = (entry: DiscoverCache): void => {
+    recommendPlaylists.value = entry.recommend;
+    radarPlaylists.value = entry.radar;
+    artists.value = entry.artists;
+    newAlbums.value = entry.albums;
   };
 
   /** 拉取首页推荐内容 */
   const load = async (): Promise<void> => {
-    const loggedIn = user.isLoggedIn;
-    if (cache && cache.loggedIn === loggedIn && Date.now() - cache.at < CACHE_TTL) {
+    const platform = data.activePlatform();
+    const loggedIn = data.isActivePlatformLoggedIn;
+    if (
+      cache &&
+      cache.platform === platform &&
+      cache.loggedIn === loggedIn &&
+      Date.now() - cache.at < CACHE_TTL
+    ) {
       apply(cache);
       return;
     }
-    const [recommend, radar, artistList, albums] = await Promise.all([
-      safe("recommend playlists", fetchRecommendPlaylists(loggedIn)),
-      loggedIn ? safe("radar playlists", fetchRadarPlaylists()) : Promise.resolve<CoverItem[]>([]),
-      safe("artists", fetchArtists()),
-      safe("new albums", fetchNewAlbums()),
-    ]);
-    cache = { at: Date.now(), loggedIn, recommend, radar, artists: artistList, albums };
+    // 酷狗侧目前只有推荐歌单，其余区块留空，不做跨平台混排
+    const [recommend, radar, artistList, albums] =
+      platform === "kugou"
+        ? [await safe("recommend playlists", fetchKugouRecommendPlaylists()), [], [], []]
+        : await Promise.all([
+            safe("recommend playlists", fetchRecommendPlaylists(user.isLoggedIn)),
+            user.isLoggedIn
+              ? safe("radar playlists", fetchRadarPlaylists())
+              : Promise.resolve<CoverItem[]>([]),
+            safe("artists", fetchArtists()),
+            safe("new albums", fetchNewAlbums()),
+          ]);
+    cache = {
+      at: Date.now(),
+      platform,
+      loggedIn,
+      recommend,
+      radar,
+      artists: artistList,
+      albums,
+    };
     apply(cache);
   };
 
-  // 登录态变化
+  // 平台或登录态变化
   watch(
-    () => user.isLoggedIn,
+    () => [data.activePlatform(), data.isActivePlatformLoggedIn] as const,
     () => {
       void load();
     },

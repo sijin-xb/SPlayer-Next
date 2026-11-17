@@ -30,8 +30,8 @@ if (updateChannel !== inferredUpdateChannel) {
 }
 
 const config: Configuration = {
-  appId: "top.imsyy.splayer-next",
-  productName: "SPlayer-Next",
+  appId: "top.sijin.splayer-kugou",
+  productName: "SPlayer-Kugou",
   copyright: "Copyright © imsyy 2025",
   directories: { buildResources: "public" },
   fileAssociations,
@@ -107,7 +107,7 @@ const config: Configuration = {
     },
   ],
   win: {
-    executableName: "SPlayer-Next",
+    executableName: "SPlayer-Kugou",
     icon: "public/icons/logo.ico",
     artifactName: "${productName}-${version}-${arch}.${ext}",
     forceCodeSigning: false,
@@ -116,7 +116,7 @@ const config: Configuration = {
   },
   nsis: {
     oneClick: false,
-    guid: "top.imsyy.splayer-next",
+    guid: "top.sijin.splayer-kugou",
     installerIcon: "public/icons/logo.ico",
     uninstallerIcon: "public/icons/logo.ico",
     installerHeader: "build/installer/header.bmp",
@@ -125,8 +125,8 @@ const config: Configuration = {
     include: "build/installer/installer.nsh",
     installerLanguages: ["en_US", "zh_CN"],
     artifactName: "${productName}-${version}-${arch}-setup.${ext}",
-    shortcutName: "SPlayer Next",
-    uninstallDisplayName: "SPlayer Next",
+    shortcutName: "SPlayer Kugou",
+    uninstallDisplayName: "SPlayer Kugou",
     createDesktopShortcut: "always",
     allowElevation: true,
     allowToChangeInstallationDirectory: true,
@@ -136,7 +136,7 @@ const config: Configuration = {
     artifactName: "${productName}-${version}-${arch}-portable.${ext}",
   },
   mac: {
-    executableName: "SPlayer-Next",
+    executableName: "SPlayer-Kugou",
     icon: "public/icons/icon.icns",
     artifactName: "${productName}-${version}-${arch}.${ext}",
     identity: null,
@@ -160,7 +160,7 @@ const config: Configuration = {
     artifactName: "${productName}-${version}-${arch}.${ext}",
   },
   linux: {
-    executableName: "SPlayer-Next",
+    executableName: "SPlayer-Kugou",
     icon: "public/icons/favicon-512x512.png",
     artifactName: "${name}-${version}-${arch}.${ext}",
     maintainer: "imsyy.top",

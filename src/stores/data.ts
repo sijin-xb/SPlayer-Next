@@ -2,6 +2,8 @@ import localforage from "localforage";
 import type { Track } from "@shared/types/player";
 import type { Platform, PlatformProfile } from "@shared/types/platform";
 import { fetchDailySongs } from "@/apis/recommend/netease";
+import { fetchKugouDailySongs } from "@/apis/recommend/kugou";
+import { useSettingsStore } from "@/stores/settings";
 import { useUserStore } from "@/stores/user";
 
 const MAX_SEARCH_HISTORY = 20;
@@ -58,8 +60,8 @@ export const useDataStore = defineStore(
 
     /** 每日推荐归档 */
     let dailyArchive: DailyRecommendEntry[] = [];
-    /** 当前内存归档归属的 userId */
-    let dailyArchiveUserId: number | null = null;
+    /** 当前内存归档归属的账号标识（`平台:userId`） */
+    let dailyArchiveUserId: string | null = null;
     /** 今日每日推荐曲目 */
     const dailyRecommend = shallowRef<Track[]>([]);
     /** 历史每日推荐（不含今日，最新在前） */
@@ -75,17 +77,54 @@ export const useDataStore = defineStore(
       dailyHistory.value = todayReady ? dailyArchive.slice(1) : dailyArchive;
     };
 
+    const settings = useSettingsStore();
+
+    /** 当前生效的在线平台，账号态功能以它为准 */
+    const activePlatform = (): Platform => settings.system.system.onlinePlatform;
+
+    /** 各平台的登录资料 */
+    const platformProfiles = ref<Partial<Record<Platform, PlatformProfile>>>({});
+
+    /**
+     * 获取指定平台的登录资料
+     * @param platform - 平台标识
+     */
+    const getPlatformProfile = (platform: Platform): PlatformProfile | null =>
+      platformProfiles.value[platform] ?? null;
+
+    /**
+     * 取指定平台当前登录账号的标识
+     * 网易云登录态仍由 user store 独占，其余平台走 platformProfiles
+     * @param platform - 平台标识
+     * @returns 账号标识，未登录返回 null
+     */
+    const dailyAccount = (platform: Platform): string | null => {
+      if (platform === "netease") {
+        const uid = user.profile?.userId;
+        return uid == null ? null : String(uid);
+      }
+      return getPlatformProfile(platform)?.userId ?? null;
+    };
+
+    /** 当前生效的平台是否已登录 */
+    const isActivePlatformLoggedIn = computed<boolean>(() => {
+      void platformProfiles.value;
+      return dailyAccount(activePlatform()) !== null;
+    });
+
     /**
      * 取每日推荐曲目：当天已有直接返回，否则按 IndexedDB → 网络 顺序获取
-     * 缓存按 userId 分键（`daily-recommend-archive:${uid}`）
+     * 缓存按「平台:账号」分键，平台间与账号间互不覆盖
      * 新一天的数据会把旧数据沉淀进历史归档（IndexedDB 持久化，保留近 14 天）
-     * 逻辑日以 6:00 为界，失败返回空数组。各处可直接调用，已就绪时即时返回
+     * 逻辑日以 6:00 为界，未登录或失败返回空数组。各处可直接调用，已就绪时即时返回
      * @param force - 强制重新拉取并覆盖当天归档
      */
     const ensureDailyRecommend = async (force = false): Promise<Track[]> => {
-      const uid = user.profile?.userId ?? null;
-      if (uid == null) return [];
-      // 用户切换 → 丢弃旧用户的内存归档，避免串数据
+      const platform = activePlatform();
+      const account = dailyAccount(platform);
+      if (account == null) return [];
+      const uid = `${platform}:${account}`;
+      // 用户或平台切换 → 丢弃旧归档，避免串数据
       if (dailyArchiveUserId !== uid) {
         dailyArchive = [];
         dailyArchiveUserId = uid;
@@ -111,7 +150,8 @@ export const useDataStore = defineStore(
           if (!force && cachedHead?.date === todayKey() && cachedHead.tracks.length > 0) {
             return dailyRecommend.value;
           }
-          const tracks = await fetchDailySongs();
+          const tracks =
+            platform === "kugou" ? await fetchKugouDailySongs() : await fetchDailySongs();
           if (tracks.length > 0) {
             // 当天已在归档则覆盖，否则前插为新的一天
             const rest =
@@ -132,15 +172,6 @@ export const useDataStore = defineStore(
     };
 
     /** 辅助平台登录资料 */
-    const platformProfiles = ref<Partial<Record<Platform, PlatformProfile>>>({});
-
-    /**
-     * 获取指定平台的登录资料
-     * @param platform - 平台标识
-     */
-    const getPlatformProfile = (platform: Platform): PlatformProfile | null =>
-      platformProfiles.value[platform] ?? null;
-
     /**
      * 设置指定平台的登录资料
      * @param platform - 平台标识
@@ -172,6 +203,8 @@ export const useDataStore = defineStore(
       dailyRecommend,
       dailyHistory,
       ensureDailyRecommend,
+      activePlatform,
+      isActivePlatformLoggedIn,
       platformProfiles,
       getPlatformProfile,
       setPlatformProfile,

@@ -397,7 +397,9 @@
     "logout": "Sign out",
     "logoutConfirmTitle": "Sign out",
     "logoutConfirmDesc": "Sign out of the current account?",
-    "logoutDone": "Signed out"
+    "logoutDone": "Signed out",
+    "platformHint": "Scanning with: {name}",
+    "useThisPlatform": "Use {name} as current platform"
   },
   "search": {
     "title": "Search",
@@ -1868,8 +1870,11 @@
         "loginFailed": "{name} login failed, please try again",
         "logoutDone": "Logged out from {name}",
         "cookieSuccess": "{name} Cookie set successfully",
-        "cookieInvalid": "Invalid Cookie, please check and retry"
-      }
+        "cookieInvalid": "Invalid Cookie, please check and retry",
+        "switched": "Switched to {name}"
+      },
+      "current": "In use",
+      "useThis": "Use this platform"
     },
     "rememberWindowState": {
       "label": "Remember Window State",

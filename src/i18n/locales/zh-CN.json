@@ -397,7 +397,9 @@
     "logout": "退出登录",
     "logoutConfirmTitle": "退出登录",
     "logoutConfirmDesc": "确认退出当前账号？",
-    "logoutDone": "已退出登录"
+    "logoutDone": "已退出登录",
+    "platformHint": "当前扫码平台：{name}",
+    "useThisPlatform": "使用 {name} 作为当前平台"
   },
   "search": {
     "title": "搜索",
@@ -1868,8 +1870,11 @@
         "loginFailed": "{name} 登录失败，请重试",
         "logoutDone": "已退出 {name} 登录",
         "cookieSuccess": "{name} Cookie 设置成功",
-        "cookieInvalid": "Cookie 无效，请检查后重试"
-      }
+        "cookieInvalid": "Cookie 无效，请检查后重试",
+        "switched": "已切换到 {name}"
+      },
+      "current": "当前使用",
+      "useThis": "使用此平台"
     },
     "rememberWindowState": {
       "label": "记忆窗口状态",

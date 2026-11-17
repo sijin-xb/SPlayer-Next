@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useDataStore } from "@/stores/data";
+import { useSettingsStore } from "@/stores/settings";
 import { toast } from "@/composables/useToast";
 import { getPlatformAccountAdapter } from "@/apis/login/platform";
 import { REPO_NAME } from "@/utils/config";
@@ -10,12 +11,21 @@ defineOptions({ inheritAttrs: false });
 
 const { t } = useI18n();
 const dataStore = useDataStore();
+const settingsStore = useSettingsStore();
 
 const props = defineProps<{ platform: Platform }>();
 const adapter = computed(() => getPlatformAccountAdapter(props.platform));
 const platformName = computed(() => adapter.value.displayName);
 
 const profile = computed(() => dataStore.getPlatformProfile(props.platform));
+/** 该平台是否为当前生效的在线平台 */
+const isActive = computed(() => dataStore.activePlatform() === props.platform);
+
+/** 把该平台设为当前生效的在线平台 */
+const useAsActive = async (): Promise<void> => {
+  await settingsStore.setSystem("system.onlinePlatform", props.platform);
+  toast.success(t("settings.platformLogin.toast.switched", { name: platformName.value }));
+};
 const loggingIn = ref(false);
 const confirmOpen = ref(false);
 const cookieModalOpen = ref(false);
@@ -207,6 +217,12 @@ const handleQrSuccess = async (): Promise<void> => {
 
       <div class="shrink-0 flex items-center gap-2">
         <template v-if="profile">
+          <STag v-if="isActive" size="small" type="primary">
+            {{ t("settings.platformLogin.current") }}
+          </STag>
+          <SButton v-else variant="secondary" size="small" @click="useAsActive">
+            {{ t("settings.platformLogin.useThis") }}
+          </SButton>
           <SButton variant="secondary" size="small" type="error" @click="confirmOpen = true">
             <template #icon>
               <IconLucideUnplug class="size-4" />

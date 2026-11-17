@@ -72,9 +72,23 @@ const refreshPlatformProfile = async (): Promise<void> => {
   if (platform === "netease") return;
   if (!data.getPlatformProfile(platform)) return;
   const latest = await getPlatformAccountAdapter(platform).fetchProfile();
-  if (latest) data.setPlatformProfile(platform, latest);
-  else data.clearPlatformProfile(platform);
+  if (latest) {
+    data.setPlatformProfile(platform, latest);
+    if (platform === "kugou") void user.loadKugouContent();
+  } else {
+    data.clearPlatformProfile(platform);
+  }
 };
+
+// 平台切换：清空上一平台的共享内容，再按新平台重新加载
+watch(
+  () => data.activePlatform(),
+  (platform) => {
+    user.clearSharedContent();
+    if (platform === "kugou" && data.getPlatformProfile("kugou")) void user.loadKugouContent();
+  },
+  { immediate: true },
+);
 
 /** 收藏计数，仅网易云有完整收藏数据 */
 const stats = computed(() => [

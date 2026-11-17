@@ -10,6 +10,7 @@ import { getMainWindow } from "@main/window";
 import { queueQuerySchema } from "@main/services/music";
 import { getPlayer } from "@main/services/engine";
 import * as neteaseScrobble from "@main/services/neteaseScrobble";
+import * as kugouScrobble from "@main/services/kugouScrobble";
 import * as lastfm from "@main/services/lastfm";
 import { sendToMain } from "@main/utils/broadcast";
 import { toMs } from "@main/utils/time";
@@ -99,6 +100,7 @@ export const playerControl = {
   pause: (): void => getPlayer().pause(),
   stop: (): void => {
     neteaseScrobble.onStopped();
+    kugouScrobble.onStopped();
     lastfm.onStopped();
     getPlayer().stop();
   },

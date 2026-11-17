@@ -169,6 +169,7 @@ export const defaultSystemConfig: SystemConfig = {
     },
     neteaseScrobbleEnabled: false,
     neteaseScrobbleMode: "legacy",
+    kugouScrobbleEnabled: false,
     registerOrpheusProtocol: false,
   },
   windowStates: {

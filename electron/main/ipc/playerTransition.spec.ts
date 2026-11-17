@@ -90,6 +90,14 @@ vi.mock("@main/services/neteaseScrobble", () => ({
   onStopped: vi.fn(),
   onRepeatOneRestart: mocks.scrobbleRestart,
 }));
+vi.mock("@main/services/kugouScrobble", () => ({
+  onTrackLoaded: vi.fn(),
+  onStopped: vi.fn(),
+  onRepeatOneRestart: vi.fn(),
+  onState: vi.fn(),
+  onPosition: vi.fn(),
+  onEnded: vi.fn(),
+}));
 vi.mock("@main/services/streaming/playback", () => ({
   prepareStreamingPlayback: mocks.streamingPrepare,
   startStreamingPlayback: mocks.streamingStart,

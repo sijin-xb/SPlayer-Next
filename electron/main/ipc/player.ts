@@ -18,6 +18,7 @@ import * as mediaService from "@main/services/media";
 import * as nowPlaying from "@main/services/nowPlaying";
 import * as lastfm from "@main/services/lastfm";
 import * as neteaseScrobble from "@main/services/neteaseScrobble";
+import * as kugouScrobble from "@main/services/kugouScrobble";
 import * as streamingPlayback from "@main/services/streaming/playback";
 import { invalidateStreamingSession } from "@main/services/streaming/adapters/resolve";
 import { fetchBytes } from "@main/utils/fetchBytes";
@@ -158,6 +159,7 @@ const registerNativeEvents = (inst: InstanceType<AudioEngineModule["AudioPlayer"
         nowPlaying.onPlayStateChange(state);
         lastfm.onState(state === "playing");
         neteaseScrobble.onState(state === "playing");
+        kugouScrobble.onState(state === "playing");
         streamingPlayback.onStreamingState(state);
         const statusEvent = {
           type: "status",
@@ -181,6 +183,7 @@ const registerNativeEvents = (inst: InstanceType<AudioEngineModule["AudioPlayer"
         mediaService.setPlayState({ status: "Paused" });
         lastfm.onEnded();
         neteaseScrobble.onEnded();
+        kugouScrobble.onEnded();
         void streamingPlayback.stopStreamingPlayback();
         setTaskbarProgress(-1);
         break;
@@ -191,6 +194,7 @@ const registerNativeEvents = (inst: InstanceType<AudioEngineModule["AudioPlayer"
         sendToMain("player:event", { type: "sourceError" });
         mediaService.setPlayState({ status: "Paused" });
         neteaseScrobble.onState(false);
+        kugouScrobble.onState(false);
         void streamingPlayback.stopStreamingPlayback();
         setTaskbarProgress(-1);
         break;
@@ -223,6 +227,7 @@ const registerNativeEvents = (inst: InstanceType<AudioEngineModule["AudioPlayer"
         nowPlaying.onPosition(posMs, true);
         lastfm.onPosition();
         neteaseScrobble.onPosition(posMs);
+        kugouScrobble.onPosition();
         streamingPlayback.onStreamingPosition(posMs);
         if (store.get("system.taskbarProgress") && durMs > 0) setTaskbarProgress(posMs / durMs);
         break;
@@ -356,6 +361,7 @@ const completeTrackLoad = (
     autoPlay,
   });
   neteaseScrobble.onTrackLoaded(authoritative, options.context, durationMs, autoPlay);
+  kugouScrobble.onTrackLoaded(authoritative, durationMs, autoPlay);
   if (coverFetchUrl) {
     void fetchBytes(coverFetchUrl).then((buf) => {
       if (!buf || seq !== loadSeq) return;
@@ -711,6 +717,7 @@ export const registerPlayerIpc = (): void => {
     void streamingPlayback.stopStreamingPlayback();
     try {
       neteaseScrobble.onStopped();
+      kugouScrobble.onStopped();
       lastfm.onStopped();
       cancelPreparedTrack();
       cancelPendingReinit();
@@ -730,6 +737,7 @@ export const registerPlayerIpc = (): void => {
       /** 重播时先装配轮次，原生 seek 的播放事件才能启动新的计时 */
       if (restartRound) {
         neteaseScrobble.onRepeatOneRestart();
+        kugouScrobble.onRepeatOneRestart();
         lastfm.onRepeatOneRestart();
       }
       const enginePositionMs = toEnginePositionMs(positionMs);
@@ -746,6 +754,7 @@ export const registerPlayerIpc = (): void => {
     } catch (error) {
       if (restartRound && seq === loadSeq) {
         neteaseScrobble.onStopped();
+        kugouScrobble.onStopped();
         lastfm.onStopped();
       }
       return fail(ErrorCode.UNKNOWN, error);

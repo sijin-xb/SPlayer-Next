@@ -76,6 +76,38 @@ export const decryptKugouDeviceData = (content: Buffer, key: string): unknown =>
   return JSON.parse(text);
 };
 
+/** 通用 AES 密钥字符集，与上游 randomString 一致 */
+const AES_KEY_CHARS = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+/**
+ * 生成 16 位通用 AES 密钥
+ * @returns 16 位大写字母数字串
+ */
+const randomAesKey = (): string => {
+  const bytes = randomBytes(16);
+  let key = "";
+  for (const byte of bytes) key += AES_KEY_CHARS[byte % AES_KEY_CHARS.length];
+  return key;
+};
+
+/**
+ * 通用 AES 加密，供关注歌手等接口使用
+ * key 取 md5(随机串) 前 32 字符（aes-256），iv 取 key 后 16 字符，输出十六进制
+ * @param data - 待加密对象
+ * @returns 密文与随机密钥
+ */
+export const encryptKugouParams = (
+  data: Record<string, unknown>,
+): { key: string; content: string } => {
+  const key = randomAesKey();
+  const digest = cryptoMd5(key);
+  const cipher = createCipheriv("aes-256-cbc", digest, digest.slice(16));
+  const content = Buffer.concat([cipher.update(JSON.stringify(data)), cipher.final()]).toString(
+    "hex",
+  );
+  return { key, content };
+};
+
 /**
  * 计算 MD5 哈希（32位小写 hex）
  * @param data - 要计算哈希的数据

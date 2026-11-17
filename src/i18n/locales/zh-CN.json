@@ -2350,6 +2350,10 @@
       "runtime": {
         "label": "分析运行时"
       }
+    },
+    "kugouScrobbleEnabled": {
+      "label": "启用酷狗听歌历史上报",
+      "description": "按实际收听时长同步 KG 播放记录"
     }
   },
   "collection": {

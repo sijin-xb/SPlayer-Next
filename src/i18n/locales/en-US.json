@@ -2350,6 +2350,10 @@
       "runtime": {
         "label": "Analysis runtime"
       }
+    },
+    "kugouScrobbleEnabled": {
+      "label": "Sync play history to KuGou",
+      "description": "Report actual listening time to KG play history"
     }
   },
   "collection": {

@@ -36,6 +36,12 @@ const switchPlatform = (next: Platform): void => {
   panelRef.value?.refresh();
 };
 
+/** 平台切换标签 */
+const platformTabs = ALL_PLATFORMS.map((item) => ({
+  key: item,
+  label: getPlatformAccountAdapter(item).displayName,
+}));
+
 const syncNeteaseProfile = async (): Promise<boolean> => {
   const ok = await user.fetchStatus();
   if (!ok) return false;
@@ -58,6 +64,7 @@ const finishLogin = async (): Promise<boolean> => {
       return false;
     }
     dataStore.setPlatformProfile(target, latest);
+    if (target === "kugou") void user.loadKugouContent();
   }
   toast.success(t("login.success"));
   emit("update:open", false);
@@ -120,22 +127,14 @@ const onCookieDialogOpen = (open: boolean): void => {
         <SLogo :size="48" />
         <div class="text-xl font-semibold text-on-surface">{{ REPO_NAME }}</div>
       </div>
-      <div class="flex items-center gap-1 rounded-full bg-on-surface/6 p-1">
-        <button
-          v-for="item in ALL_PLATFORMS"
-          :key="item"
-          type="button"
-          class="rounded-full px-3 py-1 text-xs transition-colors"
-          :class="
-            item === platform
-              ? 'bg-surface-panel text-on-surface shadow-sm'
-              : 'text-on-surface-variant/70 hover:text-on-surface'
-          "
-          @click="switchPlatform(item)"
-        >
-          {{ getPlatformAccountAdapter(item).displayName }}
-        </button>
-      </div>
+      <STabs
+        :model-value="platform"
+        :tabs="platformTabs"
+        type="segment"
+        size="small"
+        round
+        @update:model-value="switchPlatform($event as Platform)"
+      />
       <div class="text-xs text-on-surface-variant/60">
         {{ t("login.platformHint", { name: platformName }) }}
       </div>

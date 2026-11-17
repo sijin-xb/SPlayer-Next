@@ -500,6 +500,8 @@ export interface SystemConfig {
     neteaseScrobbleEnabled: boolean;
     /** 播放日志上报协议 */
     neteaseScrobbleMode: NeteaseScrobbleMode;
+    /** 酷狗听歌历史上报开关 */
+    kugouScrobbleEnabled: boolean;
     /** 注册为 Orpheus 协议处理程序，抢占网页端「用客户端打开」 */
     registerOrpheusProtocol: boolean;
   };

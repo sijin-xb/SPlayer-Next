@@ -15,6 +15,11 @@ import songUrl from "./song_url";
 import comment from "./comment";
 import everydayRecommend from "./everyday_recommend";
 import specialRecommend from "./special_recommend";
+import userPlaylist from "./user_playlist";
+import userHistory from "./user_history";
+import artistFollow from "./artist_follow";
+import playhistoryUpload from "./playhistory";
+import { cloudDelete, cloudList, cloudUrl } from "./user_cloud";
 
 export const modules: Record<string, KGModule> = {
   lyric,
@@ -30,4 +35,11 @@ export const modules: Record<string, KGModule> = {
   comment,
   everyday_recommend: everydayRecommend,
   special_recommend: specialRecommend,
+  user_playlist: userPlaylist,
+  user_history: userHistory,
+  artist_follow: artistFollow,
+  playhistory_upload: playhistoryUpload,
+  user_cloud: cloudList,
+  user_cloud_del: cloudDelete,
+  user_cloud_url: cloudUrl,
 };

@@ -18,6 +18,13 @@ import {
   toggleLikeSong,
 } from "@/apis/user/netease";
 import {
+  fetchKugouUserHistory,
+  fetchKugouUserPlaylists,
+  setKugouArtistFollow as setKugouArtistFollowApi,
+} from "@/apis/user/kugou";
+import { fetchKugouCloudTracks } from "@/apis/cloud/kugou";
+import { useSettingsStore } from "@/stores/settings";
+import {
   fetchPlaylist,
   createPlaylist as apiCreatePlaylist,
   deletePlaylist as apiDeletePlaylist,
@@ -410,10 +417,36 @@ export const useUserStore = defineStore(
     };
 
     /**
+     * 酷狗登录态
+     * 从 session cookie 直接判断，避免 user store 与 data store 循环依赖
+     * @returns 是否已登录酷狗
+     */
+    const kugouLoggedIn = async (): Promise<boolean> => {
+      const result = await window.api.apis.call("kugou", "user_detail", {});
+      const body = result.body as { loggedIn?: boolean } | undefined;
+      return result.ok && body?.loggedIn === true;
+    };
+
+    /**
      * 确保云盘曲目已就绪
+     * 网易云走完整分页与缓存，酷狗直接一次性拉取
      * @param force - true 时无论是否有缓存都重新拉取
      */
     const ensureCloud = async (force = false): Promise<void> => {
+      if (useSettingsStore().system.system.onlinePlatform === "kugou") {
+        if (!force && cloudTracks.value.length > 0) return;
+        if (!(await kugouLoggedIn())) return;
+        cloudLoading.value = true;
+        try {
+          cloudTracks.value = await fetchKugouCloudTracks();
+          cloudCount.value = cloudTracks.value.length;
+        } catch (err) {
+          console.warn("[user] kugou cloud load failed:", err);
+        } finally {
+          cloudLoading.value = false;
+        }
+        return;
+      }
       const userId = profile.value?.userId;
       if (!userId) return;
       if (!force && cloudTracks.value.length > 0) return;
@@ -772,6 +805,43 @@ export const useUserStore = defineStore(
       void invalidateSession();
     });
 
+    /**
+     * 加载酷狗账号内容到共享展示容器
+     * 仅在当前平台为酷狗时调用，网易云链路完全不受影响
+     */
+    const loadKugouContent = async (): Promise<void> => {
+      const [listResult, historyResult] = await Promise.allSettled([
+        fetchKugouUserPlaylists(),
+        fetchKugouUserHistory(),
+      ]);
+      if (listResult.status === "fulfilled") playlists.value = listResult.value;
+      if (historyResult.status === "fulfilled") likedPlaylistTracks.value = historyResult.value;
+      for (const result of [listResult, historyResult]) {
+        if (result.status === "rejected") {
+          console.warn("[user] kugou content load failed:", result.reason);
+        }
+      }
+    };
+
+    /** 清空共享展示容器，切换平台时避免串数据 */
+    const clearSharedContent = (): void => {
+      playlists.value = [];
+      likedPlaylistTracks.value = [];
+      albums.value = [];
+      artists.value = [];
+      likedSongIds.value = new Set();
+    };
+
+    /**
+     * 关注或取关酷狗歌手
+     * @param singerId - 歌手 id
+     * @param follow - true 关注，false 取关
+     */
+    const setKugouFollow = async (singerId: string, follow: boolean): Promise<void> => {
+      await setKugouArtistFollowApi(singerId, follow);
+      artists.value = artists.value.filter((item) => item.id !== singerId);
+    };
+
     /** 登出 */
     const logout = async (): Promise<void> => {
       try {
@@ -789,6 +859,9 @@ export const useUserStore = defineStore(
       fetchStatus,
       invalidateSession,
       logout,
+      loadKugouContent,
+      clearSharedContent,
+      setKugouFollow,
 
       playlists,
       likedSongIds,

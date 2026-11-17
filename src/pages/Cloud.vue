@@ -4,6 +4,7 @@ defineOptions({ name: "Cloud" });
 import type { PlaybackContext } from "@shared/types/player";
 import type { DropdownMenuItem } from "@/components/ui/SDropdownMenu.vue";
 import { useUserStore } from "@/stores/user";
+import { useSettingsStore } from "@/stores/settings";
 import SongList from "@/components/list/SongList.vue";
 import { formatFileSize } from "@/utils/format";
 import * as player from "@/core/player";
@@ -15,6 +16,10 @@ import IconLucideCloudUpload from "~icons/lucide/cloud-upload";
 
 const { t } = useI18n();
 const user = useUserStore();
+const settings = useSettingsStore();
+
+/** 云盘页当前所属平台，决定列表项的来源标识 */
+const cloudSource = computed(() => settings.system.system.onlinePlatform);
 
 const playbackContext = computed<PlaybackContext>(() => ({
   originId: "cloud",
@@ -164,7 +169,7 @@ watch(
           :items="user.cloudTracks"
           :search-query="searchQuery"
           :playback-context="playbackContext"
-          source="netease"
+          :source="cloudSource"
           collection-type="cloud"
           sort-key="cloud"
           enable-sort

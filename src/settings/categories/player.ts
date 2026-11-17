@@ -219,6 +219,18 @@ const playerCategory: SettingCategory = {
             },
           ],
         },
+        {
+          key: "kugouScrobbleEnabled",
+          type: "switch",
+          binding: { store: "settings", path: "system.system.kugouScrobbleEnabled" },
+          defaultValue: false,
+          confirm: {
+            when: (next) => next === true,
+            titleKey: "settings.confirm.enableTitle",
+            contentKey: "settings.confirm.scrobbleRiskContent",
+            type: "warning",
+          },
+        },
       ],
     },
     {

@@ -75,7 +75,7 @@ export const useHomeDiscover = () => {
 
   /** 拉取首页推荐内容 */
   const load = async (): Promise<void> => {
-    const platform = data.activePlatform();
+    const platform = data.activePlatform;
     const loggedIn = data.isActivePlatformLoggedIn;
     if (
       cache &&
@@ -112,7 +112,7 @@ export const useHomeDiscover = () => {
 
   // 平台或登录态变化
   watch(
-    () => [data.activePlatform(), data.isActivePlatformLoggedIn] as const,
+    () => [data.activePlatform, data.isActivePlatformLoggedIn] as const,
     () => {
       void load();
     },

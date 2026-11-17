@@ -80,7 +80,7 @@ export const useDataStore = defineStore(
     const settings = useSettingsStore();
 
     /** 当前生效的在线平台，账号态功能以它为准 */
-    const activePlatform = (): Platform => settings.system.system.onlinePlatform;
+    const activePlatform = computed<Platform>(() => settings.system.system.onlinePlatform);
 
     /** 各平台的登录资料 */
     const platformProfiles = ref<Partial<Record<Platform, PlatformProfile>>>({});
@@ -109,7 +109,7 @@ export const useDataStore = defineStore(
     /** 当前生效的平台是否已登录 */
     const isActivePlatformLoggedIn = computed<boolean>(() => {
       void platformProfiles.value;
-      return dailyAccount(activePlatform()) !== null;
+      return dailyAccount(activePlatform.value) !== null;
     });
 
     /**
@@ -120,7 +120,7 @@ export const useDataStore = defineStore(
      * @param force - 强制重新拉取并覆盖当天归档
      */
     const ensureDailyRecommend = async (force = false): Promise<Track[]> => {
-      const platform = activePlatform();
+      const platform = activePlatform.value;
       const account = dailyAccount(platform);
       if (account == null) return [];
       const uid = `${platform}:${account}`;

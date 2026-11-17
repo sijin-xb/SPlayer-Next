@@ -19,7 +19,7 @@ const platformName = computed(() => adapter.value.displayName);
 
 const profile = computed(() => dataStore.getPlatformProfile(props.platform));
 /** 该平台是否为当前生效的在线平台 */
-const isActive = computed(() => dataStore.activePlatform() === props.platform);
+const isActive = computed(() => dataStore.activePlatform === props.platform);
 
 /** 把该平台设为当前生效的在线平台 */
 const useAsActive = async (): Promise<void> => {

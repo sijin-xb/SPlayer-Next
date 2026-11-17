@@ -5,6 +5,8 @@ export interface KGSong {
   id: string;
   audioId: number;
   albumAudioId?: number;
+  /** 用户歌单内的唯一标识，仅删除歌单曲目时使用 */
+  fileId?: number;
   hash: string;
   name: string;
   artist: string;

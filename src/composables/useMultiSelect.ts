@@ -131,7 +131,12 @@ export const useMultiSelect = (items: Ref<Track[]>, options: MultiSelectOptions)
         if (options.source.value === "local") {
           await playlistStore.removeTracks(options.collectionId.value, ids);
         } else if (isPlatform(options.source.value)) {
-          await userStore.removeTracksFromPlaylist(options.collectionId.value, ids);
+          // 酷狗用歌单内的 fileid 删除，其它平台仍用曲目 id
+          const removeIds =
+            options.source.value === "kugou"
+              ? tracks.map((track) => track.mediaId ?? track.id)
+              : ids;
+          await userStore.removeTracksFromPlaylist(options.collectionId.value, removeIds);
         }
       }
       deleteConfirmOpen.value = false;

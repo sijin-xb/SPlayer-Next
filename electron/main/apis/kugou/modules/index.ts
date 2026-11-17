@@ -22,6 +22,7 @@ import playhistoryUpload from "./playhistory";
 import { cloudDelete, cloudList, cloudUrl } from "./user_cloud";
 import { playlistAddSongs, playlistCreate, playlistDeleteSongs } from "./playlist_edit";
 import cloudMatch from "./user_cloud_match";
+import userPlaylistTracks from "./user_playlist_tracks";
 
 export const modules: Record<string, KGModule> = {
   lyric,
@@ -48,4 +49,5 @@ export const modules: Record<string, KGModule> = {
   playlist_create: playlistCreate,
   playlist_delete_songs: playlistDeleteSongs,
   user_cloud_match: cloudMatch,
+  user_playlist_tracks: userPlaylistTracks,
 };

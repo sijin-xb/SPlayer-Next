@@ -99,7 +99,7 @@ export const useDailyRecommend = () => {
     const kinds: HeroKind[] = ["local"];
     if (data.isActivePlatformLoggedIn) kinds.push("daily");
     // 红心歌单目前只有网易云实现，其余平台不参与候选
-    if (data.activePlatform() === "netease" && user.likedPlaylistTracks.length > 0) {
+    if (data.activePlatform === "netease" && user.likedPlaylistTracks.length > 0) {
       kinds.push("liked");
     }
     const start = randomIndex(kinds.length);

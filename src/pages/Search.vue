@@ -86,7 +86,7 @@ const selectedPlatform = computed(() => (isPluginTab.value ? "plugin" : status.s
 
 // 当前在线平台变化时，搜索来源跟随切换
 watch(
-  () => data.activePlatform(),
+  () => data.activePlatform,
   (platform) => {
     if (!isPluginTab.value) status.searchPlatform = platform;
   },

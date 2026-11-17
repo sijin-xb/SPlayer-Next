@@ -21,11 +21,11 @@ const popoverOpen = ref(false);
 const isLoggedIn = computed(() => data.isActivePlatformLoggedIn);
 
 /** 当前生效的平台 */
-const isNetease = computed(() => data.activePlatform() === "netease");
+const isNetease = computed(() => data.activePlatform === "netease");
 
 /** 当前平台的展示资料，网易云沿用 user store 的完整资料 */
 const displayProfile = computed(() => {
-  const platform = data.activePlatform();
+  const platform = data.activePlatform;
   if (platform === "netease") {
     return user.profile
       ? {
@@ -71,7 +71,7 @@ useIntervalFn(
  * 网易云由 user store 负责，其余平台查询各自接口后回写
  */
 const refreshPlatformProfile = async (): Promise<void> => {
-  const platform = data.activePlatform();
+  const platform = data.activePlatform;
   if (platform === "netease") return;
   if (!data.getPlatformProfile(platform)) return;
   const latest = await getPlatformAccountAdapter(platform).fetchProfile();
@@ -85,7 +85,7 @@ const refreshPlatformProfile = async (): Promise<void> => {
 
 // 平台切换：清空上一平台的共享内容，再按新平台重新加载
 watch(
-  () => data.activePlatform(),
+  () => data.activePlatform,
   (platform) => {
     user.clearSharedContent();
     if (platform === "kugou" && data.getPlatformProfile("kugou")) void user.loadKugouContent();
@@ -134,7 +134,7 @@ const handleLogout = async (): Promise<void> => {
     type: "warning",
   });
   if (!ok) return;
-  const platform = data.activePlatform();
+  const platform = data.activePlatform;
   if (platform === "netease") {
     await user.logout();
   } else {
@@ -206,12 +206,12 @@ const handleLogout = async (): Promise<void> => {
       </span>
       <div
         v-if="
-          (data.activePlatform() === 'netease' && user.level !== undefined) || displayProfile?.isVip
+          (data.activePlatform === 'netease' && user.level !== undefined) || displayProfile?.isVip
         "
         class="flex items-center gap-1.5"
       >
         <span
-          v-if="data.activePlatform() === 'netease' && user.level !== undefined"
+          v-if="data.activePlatform === 'netease' && user.level !== undefined"
           class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold leading-none bg-amber-500/15 text-amber-600 dark:text-amber-400 tabular-nums"
         >
           Lv.{{ user.level }}

@@ -18,21 +18,10 @@ vi.mock("@/apis/recommend/kugou", () => ({
   fetchKugouDailySongs: vi.fn(async () => [{ id: "kg-1", title: "酷狗曲目" }]),
 }));
 
-const platformState = vi.hoisted(() => ({ current: "netease" as string }));
-
-vi.mock("@/stores/settings", () => ({
-  useSettingsStore: () => ({
-    system: {
-      get system() {
-        return { onlinePlatform: platformState.current };
-      },
-    },
-  }),
-}));
-
 import { fetchDailySongs } from "@/apis/recommend/netease";
 import { fetchKugouDailySongs } from "@/apis/recommend/kugou";
 import { useDataStore } from "./data";
+import { useSettingsStore } from "./settings";
 import { useUserStore } from "./user";
 
 describe("每日推荐的平台分派", () => {
@@ -42,14 +31,25 @@ describe("每日推荐的平台分派", () => {
     cache.setItem.mockClear();
     vi.mocked(fetchDailySongs).mockClear();
     vi.mocked(fetchKugouDailySongs).mockClear();
-    platformState.current = "netease";
     Object.defineProperty(window, "api", {
       configurable: true,
       value: {
         apis: { call: vi.fn(), clearSession: vi.fn() },
+        config: { getAll: vi.fn(async () => ({})), set: vi.fn(async () => undefined) },
         desktopLyric: { onConfigChange: vi.fn(() => () => undefined) },
+        dynamicIsland: { onConfigChange: vi.fn(() => () => undefined) },
+        player: { setFadeDuration: vi.fn(async () => undefined) },
+        window: {
+          onDesktopLyricVisibilityChange: vi.fn(() => () => undefined),
+          onDynamicIslandVisibilityChange: vi.fn(() => () => undefined),
+          onTaskbarLyricVisibilityChange: vi.fn(() => () => undefined),
+          isDesktopLyricOpen: vi.fn(async () => false),
+          isDynamicIslandOpen: vi.fn(async () => false),
+          isTaskbarLyricOpen: vi.fn(async () => false),
+        },
       },
     });
+    useSettingsStore().system.system.onlinePlatform = "netease";
   });
 
   it("未登录时不发请求", async () => {
@@ -70,7 +70,7 @@ describe("每日推荐的平台分派", () => {
   });
 
   it("酷狗登录且当前平台为 kugou 时走酷狗接口", async () => {
-    platformState.current = "kugou";
+    useSettingsStore().system.system.onlinePlatform = "kugou";
     const store = useDataStore();
     store.setPlatformProfile("kugou", {
       userId: "kg-user-1",
@@ -85,7 +85,7 @@ describe("每日推荐的平台分派", () => {
   });
 
   it("当前平台为 kugou 但只在网易云登录时返回空", async () => {
-    platformState.current = "kugou";
+    useSettingsStore().system.system.onlinePlatform = "kugou";
     const user = useUserStore();
     user.profile = { userId: 42, nickname: "ncm" };
     const store = useDataStore();
@@ -96,7 +96,7 @@ describe("每日推荐的平台分派", () => {
   it("缓存 key 带平台前缀，切换平台不读到对方归档", async () => {
     const user = useUserStore();
     user.profile = { userId: 7, nickname: "ncm" };
-    platformState.current = "netease";
+    useSettingsStore().system.system.onlinePlatform = "netease";
     const store = useDataStore();
     await store.ensureDailyRecommend(true);
     expect(cache.setItem).toHaveBeenCalledWith(
@@ -110,7 +110,7 @@ describe("每日推荐的平台分派", () => {
       avatarUrl: "",
       isVip: false,
     });
-    platformState.current = "kugou";
+    useSettingsStore().system.system.onlinePlatform = "kugou";
     await store.ensureDailyRecommend(true);
     expect(cache.setItem).toHaveBeenCalledWith(
       "daily-recommend-archive:kugou:kg-9",

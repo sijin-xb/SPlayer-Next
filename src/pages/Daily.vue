@@ -98,7 +98,7 @@ const handleMore = (key: string): void => {
 };
 
 watch(
-  () => [data.isActivePlatformLoggedIn, data.activePlatform()] as const,
+  () => [data.isActivePlatformLoggedIn, data.activePlatform] as const,
   ([loggedIn]) => {
     if (!loggedIn) {
       loading.value = false;
@@ -219,7 +219,7 @@ watch(
         :key="selectedDay.key"
         class="min-h-0 flex-1"
       >
-        <SongList ref="songListRef" :items="selectedDay.tracks" :source="data.activePlatform()" />
+        <SongList ref="songListRef" :items="selectedDay.tracks" :source="data.activePlatform" />
       </div>
       <!-- 加载中 -->
       <div v-else-if="loading" key="loading" class="flex flex-1 items-center justify-center">

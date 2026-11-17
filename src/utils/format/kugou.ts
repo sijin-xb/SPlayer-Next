@@ -99,6 +99,7 @@ export const kgSongToTrack = (song: KGSong): Track => {
   return {
     id: song.hash || song.id,
     extId: String(song.albumAudioId ?? song.id),
+    mediaId: song.fileId ? String(song.fileId) : undefined,
     source: "kugou",
     title: song.name,
     artists,

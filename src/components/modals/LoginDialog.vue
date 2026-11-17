@@ -19,14 +19,14 @@ const panelRef = useTemplateRef("panelRef");
 const loading = ref(false);
 const cookieDialogOpen = ref(false);
 
-const platform = ref<Platform>(dataStore.activePlatform());
+const platform = ref<Platform>(dataStore.activePlatform);
 const adapter = computed(() => getPlatformAccountAdapter(platform.value).qrLogin!);
 const platformName = computed(() => getPlatformAccountAdapter(platform.value).displayName);
 
 watch(
   () => props.open,
   (open) => {
-    if (open) platform.value = dataStore.activePlatform();
+    if (open) platform.value = dataStore.activePlatform;
   },
 );
 
@@ -160,7 +160,7 @@ const onCookieDialogOpen = (open: boolean): void => {
     <template #footer="{ close }">
       <div class="flex items-center justify-center gap-2">
         <SButton
-          v-if="platform !== dataStore.activePlatform()"
+          v-if="platform !== dataStore.activePlatform"
           variant="secondary"
           :disabled="loading"
           @click="setAsActive"

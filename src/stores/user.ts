@@ -278,6 +278,11 @@ export const useUserStore = defineStore(
     /** 清除失效凭据并切换到游客会话 */
     const invalidateSession = async (): Promise<void> => {
       statusRequestId += 1;
+      // 网易凭据失效不波及酷狗平台状态：酷狗资料由平台容器与 kugouProfile 维护
+      if (activePlatformIsKugou()) {
+        profile.value = null;
+        return;
+      }
       resetAccountState();
       if (invalidationPromise) return invalidationPromise;
       invalidationPromise = clearNeteaseSession()
@@ -656,7 +661,12 @@ export const useUserStore = defineStore(
               ],
             });
           } else {
-            const fileid = Number(findKugouTrack(trackId, known)?.mediaId ?? 0);
+            // fileid 是歌单内条目 id，同一首歌在各歌单不同；
+            // 取消红心必须用「我喜欢」列表内的 fileid，点击处的 mediaId 可能属于其他歌单
+            const likedTrack = likedPlaylistTracks.value.find((item) => item.id === trackId);
+            const fileid = Number(
+              likedTrack?.mediaId ?? findKugouTrack(trackId, known)?.mediaId ?? 0,
+            );
             if (!fileid) throw new Error("酷狗曲目缺少 fileid，无法取消红心");
             await kugouCall("playlist_delete_songs", { listid, fileids: [fileid] });
           }
@@ -906,6 +916,10 @@ export const useUserStore = defineStore(
 
     /** 校验 cookie 并同步最新 profile 与用户内容 */
     const fetchStatus = async (reloadContent = true): Promise<boolean> => {
+      // 酷狗资料与保活由 NavUser 的 refreshPlatformProfile 维护；
+      // 这里打的是网易接口，酷狗平台下调它会因网易凭据失效触发 clearContent，
+      // 把刚回写的 kugouProfile 一并清空
+      if (activePlatformIsKugou()) return kugouProfile.value !== null;
       const requestId = ++statusRequestId;
       try {
         const latest = await fetchLoginStatus();
@@ -940,6 +954,8 @@ export const useUserStore = defineStore(
     };
 
     onNeteaseAuthFailure(() => {
+      // 酷狗平台下的网易调用失败（如歌词匹配）与登录态无关，不触发网易登出链
+      if (activePlatformIsKugou()) return;
       void invalidateSession();
     });
 
@@ -962,6 +978,8 @@ export const useUserStore = defineStore(
         else kugouFollowedIds.value = new Set();
       }
       void loadKugouHistory();
+      // 红心状态就绪：不依赖用户先打开「我喜欢」页，避免各处红心图标全灰
+      if (likedPlaylistId.value) void ensureLikedPlaylist();
     };
 
     /**

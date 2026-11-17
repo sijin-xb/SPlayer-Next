@@ -5,7 +5,6 @@ import type { PlaybackContext, Track } from "@shared/types/player";
 import { ALL_PLATFORMS, PLATFORM_SHORT_NAME, type Platform } from "@shared/types/platform";
 import type { CoverItem } from "@/types/artist";
 import { searchSongs, searchAlbums, searchArtists, searchPlaylists } from "@/apis/search";
-import { useStatusStore } from "@/stores/status";
 import { useDataStore } from "@/stores/data";
 import { usePluginsStore } from "@/stores/plugins";
 import { navigateToAlbum, navigateToArtist, navigateToPlaylist } from "@/utils/navigate";
@@ -13,7 +12,6 @@ import { navigateToAlbum, navigateToArtist, navigateToPlaylist } from "@/utils/n
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const status = useStatusStore();
 const data = useDataStore();
 const plugins = usePluginsStore();
 
@@ -82,18 +80,20 @@ const isPluginTab = computed(
     pluginSources.value.length > 0 &&
     (route.query.platform === "plugin" || !!pluginSelection.value),
 );
-const selectedPlatform = computed(() => (isPluginTab.value ? "plugin" : status.searchPlatform));
+/** 搜索来源，初始跟随当前在线平台，用户可手动切换 */
+const searchPlatform = ref<Platform>(data.activePlatform);
 
-// 当前在线平台变化时，搜索来源跟随切换
+// 当前在线平台变化时同步搜索来源
 watch(
   () => data.activePlatform,
   (platform) => {
-    if (!isPluginTab.value) status.searchPlatform = platform;
+    searchPlatform.value = platform;
   },
-  { immediate: true },
 );
+
+const selectedPlatform = computed(() => (isPluginTab.value ? "plugin" : searchPlatform.value));
 const searchSource = computed(() =>
-  isPluginTab.value ? selectedSource.value || "plugin" : status.searchPlatform,
+  isPluginTab.value ? selectedSource.value || "plugin" : searchPlatform.value,
 );
 const pluginAvailable = computed(
   () =>
@@ -189,7 +189,7 @@ const fetchTab = async (tab: TabKey, append: boolean): Promise<void> => {
           limit: PAGE_SIZE,
         })
       : await (fetchers[tab] as typeof searchSongs)(
-          status.searchPlatform,
+          searchPlatform.value,
           keyword.value,
           offset,
           PAGE_SIZE,
@@ -285,7 +285,7 @@ const onPlatformSwitch = (key: string): void => {
       ? (pluginSources.value.find((item) => item.value === selectedSource.value) ??
         pluginSources.value[0])
       : undefined;
-  if (key !== "plugin") status.searchPlatform = key as Platform;
+  if (key !== "plugin") searchPlatform.value = key as Platform;
   router.replace({
     query: {
       ...route.query,
@@ -338,7 +338,7 @@ const isEmptyResult = computed(() => {
 
 /** 搜索页播放来源上下文 */
 const playbackContext = computed<PlaybackContext>(() => ({
-  provider: isPluginTab.value ? "plugin" : status.searchPlatform,
+  provider: isPluginTab.value ? "plugin" : searchPlatform.value,
   originId: `search:${searchSource.value}:${keyword.value}`,
   originType: "page",
   originName: keyword.value ? `${t("search.title")}: ${keyword.value}` : t("search.title"),
@@ -440,7 +440,7 @@ const playbackContext = computed<PlaybackContext>(() => ({
       <SongList
         v-if="activeTab === 'songs'"
         :items="states.songs.items"
-        :source="isPluginTab ? 'plugin' : status.searchPlatform"
+        :source="isPluginTab ? 'plugin' : searchPlatform"
         :playback-context="playbackContext"
         :show-size="false"
         :has-more="states.songs.hasMore"
@@ -455,9 +455,7 @@ const playbackContext = computed<PlaybackContext>(() => ({
         :padding-bottom="20"
         :has-more="states.albums.hasMore"
         :loading-more="states.albums.loadingMore"
-        @click="
-          (item) => navigateToAlbum(item.title, { source: status.searchPlatform, albumId: item.id })
-        "
+        @click="(item) => navigateToAlbum(item.title, { source: searchPlatform, albumId: item.id })"
         @reach-bottom="onReachBottom('albums')"
       />
       <CoverList
@@ -471,8 +469,7 @@ const playbackContext = computed<PlaybackContext>(() => ({
         :has-more="states.artists.hasMore"
         :loading-more="states.artists.loadingMore"
         @click="
-          (item) =>
-            navigateToArtist(item.title, { source: status.searchPlatform, artistId: item.id })
+          (item) => navigateToArtist(item.title, { source: searchPlatform, artistId: item.id })
         "
         @reach-bottom="onReachBottom('artists')"
       />
@@ -484,9 +481,7 @@ const playbackContext = computed<PlaybackContext>(() => ({
         :padding-bottom="20"
         :has-more="states.playlists.hasMore"
         :loading-more="states.playlists.loadingMore"
-        @click="
-          (item) => navigateToPlaylist(item.id, { source: status.searchPlatform, name: item.title })
-        "
+        @click="(item) => navigateToPlaylist(item.id, { source: searchPlatform, name: item.title })"
         @reach-bottom="onReachBottom('playlists')"
       />
     </div>

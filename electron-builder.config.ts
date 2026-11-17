@@ -46,6 +46,8 @@ const config: Configuration = {
     "!**/.vscode/*",
     "!src/**",
     "!native/**",
+    "!target/**",
+    "!dist/**",
     "!scripts/**",
     "!electron/**",
     "!shared/**",

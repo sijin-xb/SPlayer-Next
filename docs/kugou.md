@@ -111,6 +111,12 @@ token 与登录时使用的 appid 绑定。标准版 token 调概念版接口返
 - MV、电台、KTV、直播、听歌房、青春频道
 - 网易云既有链路的行为变更
 
+## 打包
+
+- `electron-builder --config electron-builder.config.ts --linux pacman AppImage`
+- **必须显式传 `--config`**：electron-builder 不会自动发现 `.config.ts`，缺省时以空配置打包，会把仓库根部的 `target/`（Rust 编译缓存，数 GB）全部打进 asar（files 里的排除规则也不生效）
+- `files` 已排除 `target/**` 与 `dist/**`，正常产物约 100MB
+
 ## 验证
 
 | 项           | 命令                                                          | 结果                   |

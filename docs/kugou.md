@@ -69,6 +69,11 @@ token 与登录时使用的 appid 绑定。标准版 token 调概念版接口返
 
 `useFavorite` 的 `isLiked` / `isSupported` / `toggle` 已覆盖 `kugou` 来源。
 
+### 登录态
+
+`user.isLoggedIn` 按平台判定：网易看 `profile`，酷狗看 `kugouProfile`（NavUser 刷新平台资料后回写）。
+酷狗资料此前只写 `data.platformProfiles`，`isLoggedIn` 恒 false，红心按钮被 `useFavorite.isSupported` 判死。
+
 ### 关注歌手
 
 - `modules/artist_follow.ts`：`/followservice/v3/follow_singer` 与 `unfollow_singer`，参数 AES 加密 + RSA 包装

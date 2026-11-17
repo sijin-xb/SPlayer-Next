@@ -1,5 +1,6 @@
 import localforage from "localforage";
 import type { Album, Artist, Playlist, Track } from "@shared/types/player";
+import type { PlatformProfile } from "@shared/types/platform";
 import type { UserProfile, UserSubcount } from "@/types/user";
 import { clearNeteaseSession, NeteaseApiError, onNeteaseAuthFailure } from "@/apis/netease";
 import { isExplicitNeteaseAuthFailure } from "@/apis/neteaseAuth";
@@ -110,8 +111,14 @@ export const useUserStore = defineStore(
     let invalidationPromise: Promise<void> | null = null;
     /** 仅保留在途曲目的原始状态，用于失败回滚和排除缓存中的临时状态 */
     const pendingLikes = new Map<string, { wasLiked: boolean }>();
-    /** 是否已登录 */
-    const isLoggedIn = computed(() => profile.value !== null);
+    /** 酷狗平台资料（NavUser 刷新后回写，与网易云 profile 分离） */
+    const kugouProfile = ref<PlatformProfile | null>(null);
+    /** 当前平台是否已登录：网易看 profile，酷狗看平台资料容器 */
+    const isLoggedIn = computed(() => {
+      if (useSettingsStore().system.system.onlinePlatform === "kugou")
+        return kugouProfile.value !== null;
+      return profile.value !== null;
+    });
     /** 全部歌单 */
     const playlists = shallowRef<Playlist[]>([]);
     /** 红心歌曲 id 集合 */
@@ -246,6 +253,8 @@ export const useUserStore = defineStore(
       artists.value = [];
       level.value = undefined;
       subcount.value = EMPTY_SUBCOUNT;
+      kugouProfile.value = null;
+      kugouFollowedIds.value = new Set();
       likedPlaylistAbort?.abort();
       likedPlaylistTracks.value = [];
       likedPlaylistLoading.value = false;
@@ -944,7 +953,7 @@ export const useUserStore = defineStore(
         return [] as Playlist[];
       });
       playlists.value = listResult;
-      const uid = profile.value?.userId;
+      const uid = kugouProfile.value?.userId ?? profile.value?.userId;
       if (uid) {
         const cached = await cacheDb
           .getItem<{ userId: number; ids: string[] }>(KUGOU_FOLLOWED_CACHE_KEY)
@@ -975,10 +984,19 @@ export const useUserStore = defineStore(
       artists.value = [];
       likedSongIds.value = new Set();
       kugouFollowedIds.value = new Set();
+      kugouProfile.value = null;
     };
 
     /** 酷狗已关注歌手 id；酷狗没有已关注列表接口，状态本地跟踪（可能不含站外操作） */
     const kugouFollowedIds = ref<Set<string>>(new Set());
+
+    /**
+     * 回写酷狗平台资料，供 isLoggedIn 判定与界面展示
+     * @param info - 平台资料，null 表示已登出或会话失效
+     */
+    const setKugouProfile = (info: PlatformProfile | null): void => {
+      kugouProfile.value = info;
+    };
 
     /**
      * 关注或取关酷狗歌手
@@ -991,7 +1009,7 @@ export const useUserStore = defineStore(
       if (follow) next.add(String(singerId));
       else next.delete(String(singerId));
       kugouFollowedIds.value = next;
-      const uid = profile.value?.userId;
+      const uid = kugouProfile.value?.userId ?? profile.value?.userId;
       if (uid)
         void cacheDb
           .setItem(KUGOU_FOLLOWED_CACHE_KEY, { userId: uid, ids: [...next], cachedAt: Date.now() })
@@ -1023,6 +1041,7 @@ export const useUserStore = defineStore(
       loadKugouContent,
       loadKugouHistory,
       clearSharedContent,
+      setKugouProfile,
       setKugouFollow,
       kugouFollowedIds,
       kugouHistory,

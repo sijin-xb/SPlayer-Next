@@ -53,13 +53,14 @@ onMounted(() => {
   void refreshPlatformProfile();
 });
 useEventListener(window, "focus", () => {
-  if (user.isLoggedIn) void user.fetchStatus();
+  // fetchStatus 是网易接口，只在网易平台保活；其余平台走 refreshPlatformProfile
+  if (data.activePlatform === "netease" && user.isLoggedIn) void user.fetchStatus();
   void refreshPlatformProfile();
 });
 useIntervalFn(
   () => {
     if (document.visibilityState === "visible") {
-      if (user.isLoggedIn) void user.fetchStatus(false);
+      if (data.activePlatform === "netease" && user.isLoggedIn) void user.fetchStatus(false);
       void refreshPlatformProfile();
     }
   },
@@ -79,10 +80,15 @@ const refreshPlatformProfile = async (): Promise<void> => {
     .catch(() => null);
   if (!latest) {
     data.clearPlatformProfile(platform);
+    if (platform === "kugou") user.setKugouProfile(null);
     return;
   }
   data.setPlatformProfile(platform, latest);
-  if (platform === "kugou") void user.loadKugouContent();
+  if (platform === "kugou") {
+    // isLoggedIn 依赖 user store 的酷狗资料，必须先回写再拉内容
+    user.setKugouProfile(latest);
+    void user.loadKugouContent();
+  }
 };
 
 // 平台切换：清空上一平台的共享内容，再按新平台重新加载
@@ -90,7 +96,11 @@ watch(
   () => data.activePlatform,
   (platform) => {
     user.clearSharedContent();
-    if (platform === "kugou" && data.getPlatformProfile("kugou")) void user.loadKugouContent();
+    if (platform === "kugou" && data.getPlatformProfile("kugou")) {
+      // 资料容器里已有当前账号时先回写，避免 isLoggedIn 出现未登录窗口期
+      user.setKugouProfile(data.getPlatformProfile("kugou"));
+      void user.loadKugouContent();
+    }
   },
   { immediate: true },
 );

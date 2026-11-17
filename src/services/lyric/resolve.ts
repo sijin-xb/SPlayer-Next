@@ -199,11 +199,7 @@ const resolveVerifiedOnline = async (
 
   const ownPlatform = platforms.find((platform) => platform === track.source);
   const others = platforms.filter((platform) => platform !== ownPlatform);
-  const requests = new Map(
-    options.sequential
-      ? []
-      : others.map((platform) => [platform, resolvePlatformLyric(platform, track)] as const),
-  );
+  // 自身平台请求先行；其余平台在基准确定后只对可能更优的发出，避免无效的跨平台猜测
   const own = ownPlatform ? await resolvePlatformLyric(ownPlatform, track) : null;
   if (!isCurrent()) return null;
   if (own) options.onCandidate?.(own);
@@ -221,7 +217,7 @@ const resolveVerifiedOnline = async (
     PLATFORM_MAIN_FORMATS[platform].some((format) => formatRank(format) < bestRank);
 
   const evaluate = async (platform: Platform): Promise<void> => {
-    const result = await (requests.get(platform) ?? resolvePlatformLyric(platform, track));
+    const result = await resolvePlatformLyric(platform, track);
     if (!isCurrent()) return;
     if (result) {
       const lines = parseMainLines(result.source.format, result.input.content);
@@ -267,7 +263,7 @@ const resolveVerifiedOnline = async (
       if (canBeatBest(platform)) await evaluate(platform);
     }
   } else {
-    await Promise.all(others.map(evaluate));
+    await Promise.all(others.filter(canBeatBest).map(evaluate));
   }
   return isCurrent() ? best : null;
 };

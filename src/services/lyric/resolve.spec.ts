@@ -514,6 +514,35 @@ describe("resolveOnlineByPreference 候选验证", () => {
     expect(result?.source.platform).toBe("qqmusic");
     expect(mockRequestPlatformLyric).toHaveBeenCalledTimes(1);
   });
+
+  it("自身平台已是更优格式时，低排位平台不再请求", async () => {
+    // 酷狗 KRC 排位高于网易 YRC，自身命中后网易不可能更优，不应发出跨平台请求
+    const krcContent = timedLyric().replace(
+      /([^\s()\]]+ ?)\((\d+),500\)/g,
+      (_, word: string, start: string) => `<${(Number(start) - 1000) % 4000},500,0>${word}`,
+    );
+    mockPlatforms({
+      kugou: { format: "krc", content: krcContent },
+    });
+
+    const result = await resolveOnlineByPreference({ ...createTrack("song"), source: "kugou" });
+
+    expect(result?.source.platform).toBe("kugou");
+    expect(mockRequestPlatformLyric).toHaveBeenCalledTimes(2);
+    expect(mockRequestPlatformLyric).not.toHaveBeenCalledWith("netease", expect.anything());
+  });
+
+  it("自身平台查无歌词时其余平台照常兜底", async () => {
+    mockPlatforms({
+      qqmusic: { format: "qrc", content: timedLyric() },
+    });
+
+    const result = await resolveOnlineByPreference({ ...createTrack("song"), source: "kugou" });
+
+    expect(result?.source.platform).toBe("qqmusic");
+    expect(mockRequestPlatformLyric).toHaveBeenCalledWith("netease", expect.anything());
+    expect(mockRequestPlatformLyric).toHaveBeenCalledWith("qqmusic", expect.anything());
+  });
 });
 
 describe("resolveStreamingByPreference", () => {

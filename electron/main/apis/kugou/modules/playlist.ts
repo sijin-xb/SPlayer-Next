@@ -91,10 +91,11 @@ const playlist: KGModule = async (params) => {
 
   let globalId = id;
   if (/^\d+$/.test(id)) {
-    const response = await kgRequest<{ data: { global_specialid: string } }>(
+    const response = await kgRequest<{ data?: { global_specialid?: string } }>(
       `http://mobilecdn.kugou.com/api/v3/special/info?specialid=${id}&format=json`,
     );
-    globalId = response.data.global_specialid;
+    // 用户自建歌单不在这张表里，接口返回 data: null
+    globalId = response.data?.global_specialid ?? "";
     if (!globalId) throw new Error("KG 歌单不存在或不可访问");
   }
 

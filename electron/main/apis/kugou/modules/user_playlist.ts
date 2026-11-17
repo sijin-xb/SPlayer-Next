@@ -11,10 +11,10 @@ interface KGUserList {
   listname?: string;
   pic?: string;
   img?: string;
+  list_create_username?: string;
   nickname?: string;
-  songcount?: number;
-  play_count?: number;
-  type?: number;
+  count?: number | string;
+  is_def?: number;
   [key: string]: unknown;
 }
 
@@ -54,12 +54,13 @@ const userPlaylist: KGModule = async (params) => {
   const info = response.data?.info ?? [];
   const playlists: KGPlaylistItem[] = info
     .map((raw) => ({
-      id: String(raw.global_collection_id ?? raw.listid ?? ""),
+      id: String(raw.listid ?? ""),
       name: decodeName(raw.name ?? raw.listname ?? ""),
       cover: fillCover(raw.pic ?? raw.img, 300),
-      creator: decodeName(raw.nickname ?? ""),
-      trackCount: raw.songcount ?? 0,
-      playCount: raw.play_count ?? 0,
+      creator: decodeName(raw.list_create_username ?? raw.nickname ?? ""),
+      trackCount: Number(raw.count ?? 0),
+      playCount: 0,
+      isLiked: raw.is_def === 2,
     }))
     .filter((item) => item.id && item.name);
 

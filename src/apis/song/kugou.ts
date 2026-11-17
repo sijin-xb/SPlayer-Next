@@ -5,11 +5,12 @@ import { kugouCall } from "@/apis/kugou";
 import { KUGOU_CLOUD_MARK } from "@/apis/cloud/kugou";
 
 export type KugouPlayUrlResult =
-  { available: true; url: string; isTrial: boolean } | { available: false; errorCode: ErrorCode };
+  | { available: true; url: string; backupUrl?: string; isTrial: boolean }
+  | { available: false; errorCode: ErrorCode };
 
 interface SongUrlResponse {
   code: number;
-  data?: { url?: string };
+  data?: { url?: string; backupUrl?: string; isTrial?: boolean };
 }
 
 interface CloudUrlResponse {
@@ -50,7 +51,12 @@ export const resolveKugouUrl = async (
       level: clampQuality(level, track),
     });
     if (result.code === 200 && result.data?.url) {
-      return { available: true, url: result.data.url, isTrial: false };
+      return {
+        available: true,
+        url: result.data.url,
+        backupUrl: result.data.backupUrl,
+        isTrial: result.data.isTrial === true,
+      };
     }
   } catch (error) {
     console.warn("[kugou] resolve URL failed:", error);

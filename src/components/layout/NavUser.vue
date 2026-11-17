@@ -69,18 +69,20 @@ useIntervalFn(
 /**
  * 刷新当前平台的登录资料
  * 网易云由 user store 负责，其余平台查询各自接口后回写
+ * 本地无缓存时也必须查询，否则重启后平台登录态不会恢复
  */
 const refreshPlatformProfile = async (): Promise<void> => {
   const platform = data.activePlatform;
   if (platform === "netease") return;
-  if (!data.getPlatformProfile(platform)) return;
-  const latest = await getPlatformAccountAdapter(platform).fetchProfile();
-  if (latest) {
-    data.setPlatformProfile(platform, latest);
-    if (platform === "kugou") void user.loadKugouContent();
-  } else {
+  const latest = await getPlatformAccountAdapter(platform)
+    .fetchProfile()
+    .catch(() => null);
+  if (!latest) {
     data.clearPlatformProfile(platform);
+    return;
   }
+  data.setPlatformProfile(platform, latest);
+  if (platform === "kugou") void user.loadKugouContent();
 };
 
 // 平台切换：清空上一平台的共享内容，再按新平台重新加载

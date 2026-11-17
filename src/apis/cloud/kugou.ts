@@ -26,9 +26,10 @@ const toSong = (raw: Record<string, unknown>): KGSong => {
   const duration = Number(raw.timelen ?? raw.duration ?? 0);
   const hash = String(raw.hash ?? "");
   return {
-    id: String(raw.audio_id ?? hash),
+    id: hash || String(raw.audio_id ?? ""),
     audioId: Number(raw.audio_id ?? 0),
     albumAudioId: Number(raw.album_audio_id ?? 0),
+    fileId: Number(raw.kv_id ?? 0),
     hash,
     name: String(raw.ori_name ?? raw.name ?? raw.filename ?? ""),
     artist: String(raw.author_name ?? raw.singername ?? ""),
@@ -50,18 +51,32 @@ const toSong = (raw: Record<string, unknown>): KGSong => {
  * @returns 云盘曲目
  */
 export const fetchKugouCloudTracks = async (): Promise<Track[]> => {
-  const response = await kugouCall<CloudListResponse>("user_cloud", { page: 1, pageSize: 100 });
-  const songs = (response?.songs ?? []).map(toSong);
+  const raw: Array<Record<string, unknown>> = [];
+  let page = 1;
+  let total = Infinity;
+  while (raw.length < total) {
+    const response = await kugouCall<CloudListResponse>("user_cloud", { page, pageSize: 100 });
+    const list = response?.songs ?? [];
+    raw.push(...list);
+    total = response?.total ?? raw.length;
+    if (list.length < 100) break;
+    page += 1;
+  }
+  const songs = raw.map(toSong);
   // comment 作为云盘来源标记，播放地址走 query_musicclound_url 而非 song_url
   return kgSongsToTracks(songs).map((track) => ({ ...track, comment: KUGOU_CLOUD_MARK }));
 };
 
 /**
- * 删除酷狗云盘歌曲
- * @param hashes - 曲目 hash 列表
+ * 删除酷狗云盘歌曲，定位依赖云盘列表的 kv_id
+ * @param tracks - 云盘曲目
  */
-export const deleteKugouCloudTracks = async (hashes: string[]): Promise<void> => {
-  await kugouCall("user_cloud_del", { hashes });
+export const deleteKugouCloudTracks = async (tracks: Track[]): Promise<void> => {
+  const items = tracks.map((track) => ({
+    kvId: Number(track.mediaId ?? 0),
+    albumAudioId: Number(track.extId ?? 0),
+  }));
+  await kugouCall("user_cloud_del", { items });
 };
 
 /**

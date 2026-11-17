@@ -1,13 +1,15 @@
 import type { KGModule } from "../core/types";
 import { getSessionCookies } from "@main/database/sessions";
 import {
+  cryptoMd5,
   decryptKugouDeviceData,
   encryptKugouDeviceData,
+  getDeviceMid,
   rsaEncryptKugouPkcs1,
   signParamsKey,
+  signatureAndroidParams,
 } from "../core/crypto";
 import { getKgAppid, getKgClientver } from "../core/config";
-import { getDeviceMid } from "../core/crypto";
 
 const CLOUD_BASE = "https://mcloudservice.kugou.com";
 const CLOUD_TIMEOUT_MS = 10000;
@@ -95,19 +97,25 @@ export const cloudList: KGModule = async (params) => {
     pagesize: params.pageSize ?? 30,
     getkmr: 1,
   });
-  const list = body.data?.list ?? body.list ?? [];
-  return { code: 200, songs: list, total: body.data?.total ?? body.total ?? list.length };
+  const list = body.data?.list ?? body.list;
+  const songs = Array.isArray(list) ? list : [];
+  return { code: 200, songs, total: body.data?.total ?? body.total ?? songs.length };
 };
 
 /**
- * 删除云盘歌曲
- * @param params - hash 列表
+ * 删除云盘歌曲，按云盘列表返回的 kv_id 定位
+ * @param params - items 为 {kvId, albumAudioId} 列表
  * @returns 删除结果
  */
 export const cloudDelete: KGModule = async (params) => {
-  const hashes = params.hashes as string[] | undefined;
-  if (!hashes?.length) throw new Error("KG 云盘删除缺少 hash");
-  await cloudRequest("/v1/del_song", { ...params, hashes });
+  const items = params.items as Array<{ kvId: number; albumAudioId?: number }> | undefined;
+  if (!items?.length) throw new Error("KG 云盘删除缺少 kv_id");
+  await cloudRequest("/v1/del_files", {
+    data: items.map((item) => ({
+      kv_id: Number(item.kvId) || 0,
+      album_audio_id: Number(item.albumAudioId ?? 0) || 0,
+    })),
+  });
   return { code: 200 };
 };
 
@@ -129,17 +137,28 @@ export const cloudUrl: KGModule = async (params) => {
     pid: "20026",
     audio_id: String(params.audioId ?? 0),
     kv_id: "2",
-    key: signParamsKey(hash),
+    key: cryptoMd5(`musicclound${hash}20026ebd1ac3134c880bda6a2194537843caa0162e2e7`),
     bucket: "musicclound",
     name: String(params.name ?? ""),
     with_res_tag: "0",
     userid: session.userid ?? "0",
+    token: session.token ?? "",
+    dfid: session.dfid ?? "-",
+    mid: getDeviceMid(),
+    clienttime: String(Math.floor(Date.now() / 1000)),
+    appid: String(getKgAppid()),
+    clientver: String(getKgClientver()),
   });
+  const signParams: Record<string, string> = Object.fromEntries(query.entries());
+  query.set("signature", signatureAndroidParams(signParams, ""));
   const res = await fetch(
-    `https://bsstrackercdngz.kugou.com/bsstrackercdngz/v2/query_musicclound_url?${query.toString()}`,
+    `https://gateway.kugou.com/bsstrackercdngz/v2/query_musicclound_url?${query.toString()}`,
     {
       headers: {
         "User-Agent": "Android15-1070-11083-46-0-DiscoveryDRADProtocol-wifi",
+        dfid: session.dfid ?? "-",
+        clienttime: query.get("clienttime") ?? "",
+        mid: getDeviceMid(),
       },
       signal: AbortSignal.timeout(CLOUD_TIMEOUT_MS),
     },
@@ -147,9 +166,9 @@ export const cloudUrl: KGModule = async (params) => {
   if (!res.ok) throw new Error(`KG 云盘地址 HTTP ${res.status}`);
   const body = (await res.json()) as {
     url?: string[];
-    data?: { url?: string[] };
+    data?: { url?: string; backup_url?: string };
   };
-  const url = body.url?.[0] ?? body.data?.url?.[0];
+  const url = body.data?.url ?? body.url?.[0];
   if (!url) throw new Error("KG 云盘地址为空");
   return { code: 200, url: url.replace(/^http:\/\//, "https://") };
 };

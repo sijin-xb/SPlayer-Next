@@ -236,10 +236,13 @@ const resolveOnlineUrl = async (
   if (track.source === "kugou" && !options.skipOfficialOnline) {
     try {
       const resolved = await resolveKugouUrl(track, songLevel);
-      if (resolved.available) {
+      if (!resolved.available) {
+        officialErrorCode = resolved.errorCode;
+      } else if (!resolved.isTrial) {
         return { ok: true, url: resolved.url, isTrial: false, provider: "official" };
+      } else {
+        trialUrl = resolved.url;
       }
-      officialErrorCode = resolved.errorCode;
     } catch (err) {
       console.warn("[audio-source] official Kugou URL resolve failed:", err);
       officialErrorCode = ErrorCode.NETWORK_ERROR;

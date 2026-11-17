@@ -14,8 +14,9 @@ interface KGSpecialItem {
   pic?: string;
   creatorname?: string;
   nickname?: string;
-  songcount?: number;
-  playcount?: number;
+  percount?: number;
+  collectcount?: number;
+  play_count?: number;
   [key: string]: unknown;
 }
 
@@ -33,9 +34,9 @@ const normalizeSpecial = (raw: KGSpecialItem): KGPlaylistItem => ({
   id: String(raw.specialid ?? raw.global_collection_id ?? ""),
   name: decodeName(raw.specialname ?? ""),
   cover: fillCover(raw.imgurl ?? raw.pic, 300),
-  creator: decodeName(raw.creatorname ?? raw.nickname ?? ""),
-  trackCount: raw.songcount ?? 0,
-  playCount: raw.playcount ?? 0,
+  creator: decodeName(raw.nickname ?? raw.creatorname ?? ""),
+  trackCount: Number(raw.collectcount ?? raw.percount ?? 0),
+  playCount: Number(raw.play_count ?? 0),
 });
 
 /**

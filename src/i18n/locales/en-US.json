@@ -657,8 +657,7 @@
       "needLogin": "Please log in first",
       "unsupported": "This source does not support liking",
       "failed": "Action failed, please try again"
-    },
-    "unsupportedPlatform": "KuGou has no liked-songs playlist; browse your collections instead"
+    }
   },
   "cloud": {
     "title": "My Cloud",

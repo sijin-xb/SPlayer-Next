@@ -22,7 +22,8 @@ import {
   fetchKugouUserPlaylists,
   setKugouArtistFollow as setKugouArtistFollowApi,
 } from "@/apis/user/kugou";
-import { fetchKugouCloudTracks } from "@/apis/cloud/kugou";
+import { deleteKugouCloudTracks, fetchKugouCloudTracks } from "@/apis/cloud/kugou";
+import { fetchOwnPlaylistTracks } from "@/apis/playlist/kugou";
 import { kugouCall } from "@/apis/kugou";
 import { queue } from "@/stores/queue";
 import { useSettingsStore } from "@/stores/settings";
@@ -146,8 +147,19 @@ export const useUserStore = defineStore(
     /** 进行中的云盘拉取 */
     let cloudAbort: AbortController | null = null;
 
-    /** 「我喜欢的音乐」歌单 id */
-    const likedPlaylistId = computed<string | null>(() => playlists.value[0]?.id ?? null);
+    /** 「我喜欢的音乐」歌单 id，酷狗按接口 is_def 标识识别 */
+    const likedPlaylistId = computed<string | null>(() => {
+      const onlinePlatform = useSettingsStore().system.system.onlinePlatform;
+      if (onlinePlatform === "kugou") {
+        const liked = playlists.value.find((item) => item.isLiked);
+        return liked?.id ?? null;
+      }
+      return playlists.value[0]?.id ?? null;
+    });
+
+    /** 当前在线平台是否为酷狗 */
+    const activePlatformIsKugou = (): boolean =>
+      useSettingsStore().system.system.onlinePlatform === "kugou";
 
     /** 自建歌单 */
     const createdPlaylists = computed<Playlist[]>(() => {
@@ -290,6 +302,12 @@ export const useUserStore = defineStore(
       cacheDb.setItem(LIKED_PLAYLIST_CACHE_KEY, payload).catch(() => {});
     };
 
+    /** 酷狗平台下的曲目查找，红心增删需要歌名与 mixsongid */
+    const findKugouTrack = (trackId: string, known: Track[] = []): Track | undefined =>
+      known.find((item) => item.id === trackId) ??
+      likedPlaylistTracks.value.find((item) => item.id === trackId) ??
+      queue.value.find((item) => item.id === trackId);
+
     /** 拉取最新喜欢歌单曲目 */
     const refreshLikedPlaylist = async (playlistId: string): Promise<void> => {
       likedPlaylistAbort?.abort();
@@ -298,6 +316,15 @@ export const useUserStore = defineStore(
       const likedVersion = likedSongIdsVersion;
       if (likedPlaylistTracks.value.length === 0) likedPlaylistLoading.value = true;
       try {
+        if (activePlatformIsKugou()) {
+          const tracks = await fetchOwnPlaylistTracks(playlistId);
+          if (controller.signal.aborted || likedVersion !== likedSongIdsVersion) return;
+          likedPlaylistTracks.value = tracks;
+          likedPlaylistSongIds = tracks.map((track) => track.id);
+          applyLikedSongIds(likedPlaylistSongIds);
+          persistLikedPlaylistCache(playlistId, tracks);
+          return;
+        }
         const accumulated: Track[] = [];
         let trackIds: string[] = [];
         await fetchPlaylist(playlistId, {
@@ -329,7 +356,7 @@ export const useUserStore = defineStore(
       if (likedPlaylistSyncPromise) return likedPlaylistSyncPromise;
       const uid = profile.value?.userId;
       const playlistId = likedPlaylistId.value;
-      if (!uid || !playlistId) return Promise.resolve();
+      if (!playlistId || (!uid && !activePlatformIsKugou())) return Promise.resolve();
       const requestId = accountVersion;
       const likedVersion = likedSongIdsVersion;
       const pending = (async () => {
@@ -341,6 +368,12 @@ export const useUserStore = defineStore(
             likedPlaylistSongIds = null;
             await hydrateLikedPlaylistFromCache(playlistId);
           }
+          if (activePlatformIsKugou()) {
+            if (force || firstVisit || !isLikedPlaylistFresh())
+              await refreshLikedPlaylist(playlistId);
+            return;
+          }
+          if (!uid) return;
           const ids = await fetchLikelist(uid);
           if (
             requestId !== accountVersion ||
@@ -438,7 +471,7 @@ export const useUserStore = defineStore(
      * @param force - true 时无论是否有缓存都重新拉取
      */
     const ensureCloud = async (force = false): Promise<void> => {
-      if (useSettingsStore().system.system.onlinePlatform === "kugou") {
+      if (activePlatformIsKugou()) {
         if (!force && cloudTracks.value.length > 0) return;
         if (!(await kugouLoggedIn())) return;
         cloudLoading.value = true;
@@ -465,6 +498,15 @@ export const useUserStore = defineStore(
      */
     const removeCloudTracks = async (trackIds: string[]): Promise<void> => {
       if (trackIds.length === 0) return;
+      if (activePlatformIsKugou()) {
+        const removeSet = new Set(trackIds);
+        const targets = cloudTracks.value.filter((track) => removeSet.has(track.id));
+        await deleteKugouCloudTracks(targets);
+        cloudTracks.value = cloudTracks.value.filter((track) => !removeSet.has(track.id));
+        cloudCount.value = Math.max(0, cloudCount.value - trackIds.length);
+        persistCloudCache();
+        return;
+      }
       await deleteCloudSongs(trackIds);
       const removeSet = new Set(trackIds);
       cloudTracks.value = cloudTracks.value.filter((track) => !removeSet.has(track.id));
@@ -562,9 +604,14 @@ export const useUserStore = defineStore(
      * @param trackId - 曲目全局 ID
      * @param like - 目标红心状态
      */
-    const applySongLike = async (trackId: string, like: boolean): Promise<void> => {
+    const applySongLike = async (
+      trackId: string,
+      like: boolean,
+      known: Track[] = [],
+    ): Promise<void> => {
+      const kugou = activePlatformIsKugou();
       const uid = profile.value?.userId;
-      if (!uid) throw new Error("请先登录音乐平台");
+      if (!kugou && !uid) throw new Error("请先登录音乐平台");
       if (pendingLikes.has(trackId)) throw new Error("该曲目的红心操作正在进行");
       const operation = { wasLiked: likedSongIds.value.has(trackId) };
       pendingLikes.set(trackId, operation);
@@ -575,8 +622,31 @@ export const useUserStore = defineStore(
       else next.delete(trackId);
       likedSongIds.value = next;
       try {
-        await toggleLikeSong(trackId, like, uid);
-        if (requestId !== accountVersion || !profile.value) {
+        if (kugou) {
+          const listid = likedPlaylistId.value;
+          if (!listid) throw new Error("酷狗「我喜欢」歌单未就绪");
+          if (like) {
+            const track = findKugouTrack(trackId, known);
+            await kugouCall("playlist_add_songs", {
+              listid,
+              songs: [
+                {
+                  name: track?.title ?? "",
+                  hash: trackId,
+                  albumId: Number(track?.album?.id ?? 0),
+                  mixsongid: Number(track?.extId ?? 0),
+                },
+              ],
+            });
+          } else {
+            const fileid = Number(findKugouTrack(trackId, known)?.mediaId ?? 0);
+            if (!fileid) throw new Error("酷狗曲目缺少 fileid，无法取消红心");
+            await kugouCall("playlist_delete_songs", { listid, fileids: [fileid] });
+          }
+        } else if (uid) {
+          await toggleLikeSong(trackId, like, uid);
+        }
+        if (requestId !== accountVersion || (!kugou && !profile.value)) {
           throw new Error("平台账号已变更");
         }
         likedSongIdsVersion++;
@@ -604,19 +674,22 @@ export const useUserStore = defineStore(
     /**
      * 切换红心状态
      * @param trackId - 曲目全局 ID
+     * @param known - 调用方已有的曲目，用于补齐酷狗接口所需字段
      * @returns 请求是否成功
      */
-    const toggleLike = async (trackId: string): Promise<boolean> => {
-      if (!profile.value || pendingLikes.has(trackId)) return false;
+    const toggleLike = async (trackId: string, known: Track[] = []): Promise<boolean> => {
+      if (pendingLikes.has(trackId)) return false;
+      if (!activePlatformIsKugou() && !profile.value) return false;
       const version = accountVersion;
       try {
-        await applySongLike(trackId, !likedSongIds.value.has(trackId));
+        await applySongLike(trackId, !likedSongIds.value.has(trackId), known);
         const playlistId = likedPlaylistId.value;
         if (playlistId && currentLikedPlaylistId === playlistId)
           void refreshLikedPlaylist(playlistId);
         return true;
       } catch (err) {
-        if (version !== accountVersion || !profile.value) return false;
+        if (version !== accountVersion || (!activePlatformIsKugou() && !profile.value))
+          return false;
         console.warn("[user] toggle like failed:", err);
         return false;
       }
@@ -639,7 +712,7 @@ export const useUserStore = defineStore(
      * @param privacy - 歌单隐私设置，0 为公开，10 为私密
      */
     const createPlaylist = async (name: string, privacy: 0 | 10 = 0): Promise<Playlist> => {
-      if (useSettingsStore().system.system.onlinePlatform === "kugou") {
+      if (activePlatformIsKugou()) {
         const created = await kugouCall<{ listid?: string | number }>("playlist_create", {
           name,
           private: privacy === 10,
@@ -684,12 +757,17 @@ export const useUserStore = defineStore(
      * 加歌到歌单
      * @param playlistId - 歌单 ID
      * @param trackIds - 曲目 ID 列表
+     * @param known - 调用方已有的曲目，用于补齐酷狗接口所需字段
      * @returns 成功添加的曲目数量
      */
-    const addTracksToPlaylist = async (playlistId: string, trackIds: string[]): Promise<number> => {
-      if (useSettingsStore().system.system.onlinePlatform === "kugou") {
+    const addTracksToPlaylist = async (
+      playlistId: string,
+      trackIds: string[],
+      known: Track[] = [],
+    ): Promise<number> => {
+      if (activePlatformIsKugou()) {
         const lookup = new Map<string, Track>();
-        for (const track of [...likedPlaylistTracks.value, ...queue.value]) {
+        for (const track of [...known, ...likedPlaylistTracks.value, ...queue.value]) {
           lookup.set(track.id, track);
         }
         const songs = [...new Set(trackIds)].map((id) => {
@@ -737,7 +815,7 @@ export const useUserStore = defineStore(
       playlistId: string,
       trackIds: string[],
     ): Promise<void> => {
-      if (useSettingsStore().system.system.onlinePlatform === "kugou") {
+      if (activePlatformIsKugou()) {
         const fileids = [...new Set(trackIds)]
           .map((id) => Number(id))
           .filter((id) => Number.isFinite(id) && id > 0);

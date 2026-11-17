@@ -46,7 +46,7 @@ export const useFavorite = () => {
   const isLiked = (track: Track | null | undefined): boolean => {
     if (!track) return false;
     if (track.source === "local") return library.isLiked(track.id);
-    if (track.source === "netease") return user.isLiked(track.id);
+    if (track.source === "netease" || track.source === "kugou") return user.isLiked(track.id);
     if (track.source === "streaming") return streaming.isFavorite(track);
     return false;
   };
@@ -59,7 +59,7 @@ export const useFavorite = () => {
   const isSupported = (track: Track | null | undefined): boolean => {
     if (!track) return false;
     if (track.source === "local") return true;
-    if (track.source === "netease") return user.isLoggedIn;
+    if (track.source === "netease" || track.source === "kugou") return user.isLoggedIn;
     if (track.source === "streaming")
       return Boolean(
         track.serverId &&
@@ -95,14 +95,14 @@ export const useFavorite = () => {
       toast.success(t(next ? "liked.toast.added" : "liked.toast.removed"));
       return;
     }
-    if (track.source === "netease") {
+    if (track.source === "netease" || track.source === "kugou") {
       if (user.isLikePending(track.id)) return;
       if (!user.isLoggedIn) {
         toast.warning(t("liked.toast.needLogin"));
         return;
       }
       const wasLiked = user.isLiked(track.id);
-      const ok = await user.toggleLike(track.id);
+      const ok = await user.toggleLike(track.id, [track]);
       if (!ok) {
         toast.error(t("liked.toast.failed"));
         return;

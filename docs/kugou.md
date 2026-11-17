@@ -6,35 +6,68 @@
 
 前置问题：项目原有唯一的登录态 `user.profile / user.isLoggedIn` 只由网易云写入，酷狗登录只写 `dataStore.platformProfiles`，导致任何依赖账号态的功能在酷狗下恒为空。本计划首先解决这个结构问题。
 
+## 登录版本
+
+`system.kugouLoginVersion` 取 `concept`（默认）或 `standard`，切换后清空酷狗会话，需重新扫码。
+
+两套参数不通用：
+
+| 版本   | appid | clientver | 签名盐                             |
+| ------ | ----- | --------- | ---------------------------------- |
+| 概念版 | 3116  | 11440     | `LnT6xpN3khm36zse0QzvmgTZ3waWdRSA` |
+| 标准版 | 1005  | 20489     | `OIlwieks28dk2k092lksi2UIkp`       |
+
+token 与登录时使用的 appid 绑定。标准版 token 调概念版接口返回 `error_code: 20018`，无法通过接口互换，只能重新扫码。
+
+`/v5/url` 另用固定 `clientver: 11430` 与 signKey 盐 `185672dd44712f60bb1736df5a377e82`（概念版）/ `57ae12eb6890223e355ccfcb74edf70d`（标准版）。
+
+区别体现在 url 参数上：
+
+- 概念版：`ap3116`、`pi411`、`pa967177915`、`ppage_id=356753938`、`mx0`
+- 标准版：`ap1005`、`pi2`、`pa151369488`、`ppage_id=463467626,350369493,788954147`、`mx<audio_id>`
+
+概念版必须传 `album_audio_id=0`。传歌单里的 `audio_id` 会被降级成 30 秒试听。
+
 ## 平台登录态
 
-- 新增 `system.onlinePlatform: Platform`，默认 `netease`，持久化于主进程配置
-- `stores/data.ts` 提供 `activePlatform()`、`isActivePlatformLoggedIn`
+- `system.onlinePlatform: Platform`，默认 `netease`，持久化于主进程配置
+- `stores/data.ts` 提供 `activePlatform` computed、`isActivePlatformLoggedIn`
 - 账号来源按平台分流：netease 读 `user.profile`，其余读 `platformProfiles`
 - `LoginDialog.vue` 顶部提供平台切换，登录后按平台收尾，底部可切换当前平台
 - `NavUser.vue` 的登录态、头像、昵称、登出均按当前平台处理
 - 平台切换时清空共享展示容器，避免串数据
 
-## 每日推荐
+## 归一化
 
-- `modules/everyday_recommend.ts`，走 `x-router: everydayrec.service.kugou.com`
-- 该接口返回扁平结构（`ori_audio_name` / `sizable_cover` / `time_length`），与 `normalizeKGSong` 的嵌套资源结构不同，单独归一化
-- `stores/data.ts` 的 `ensureDailyRecommend` 按平台分派
-- 归档缓存 key 为 `daily-recommend-archive:{platform}:{userId}`
-- `/daily` 页闸门改为 `data.isActivePlatformLoggedIn`
+酷狗三类接口返回三种形状，统一由 `core/song.ts` 处理：
 
-## 首页推荐
+| 入口                                   | 形状                                  | 归一化函数                                  |
+| -------------------------------------- | ------------------------------------- | ------------------------------------------- |
+| `/v4/get_list_all_file_v3`、历史、搜索 | 扁平，音质在 `relate_goods[]`         | `normalizeFlatSong`                         |
+| `/playhistory/v1/get_songs`            | 外层 `{mxid, ot, ...}` 内嵌 `info`    | 取 `item.info` 后 `normalizeFlatSong`       |
+| `/everyday_song_recommend`             | 扁平，音质在 `hash_128/320/flac/high` | `normalizeFlatSong(raw, { seconds: true })` |
 
-- `modules/special_recommend.ts`（`/v2/special_recommend`），body 键序参与 android 签名
-- `useHomeDiscover` 增加平台维度：酷狗只拉推荐歌单，雷达/歌手/新碟留空
-- 缓存增加 `platform` 字段，切换平台失效
+`relate_goods` 在歌单/历史中是数组，在每日推荐中是对象，两种都要处理。
+
+`mixsongid` 即上报用的 `mxid`，写入 `Track.extId`。`fileid` 写入 `Track.mediaId`，歌单删除依赖它。
 
 ## 用户中心
 
-- `modules/user_playlist.ts`（`/v7/get_all_list`）、`modules/user_history.ts`（`/playhistory/v1/get_songs`）
+- `modules/user_playlist.ts`（`/v7/get_all_list`）：歌单 id 用 `listid` 数字，不用 `global_collection_id`；「我喜欢」由 `is_def === 2` 标识
+- `modules/user_playlist_tracks.ts`（`/v4/get_list_all_file_v3`，x-router `cloudlist.service.kugou.com`）：曲目在 `data.info`，每页上限 300
+- `modules/user_history.ts`（`/playhistory/v1/get_songs`）
 - `modules/artist_follow.ts`：参数经通用 AES 加密（md5 前 32 位作 aes-256 密钥），随机密钥再经 RSA 包装
 - `stores/user.ts` 新增 `loadKugouContent` / `clearSharedContent` / `setKugouFollow`
 - 酷狗数据写入共享展示容器，切换平台时清空
+
+## 收藏
+
+「我喜欢」在酷狗就是一个普通歌单（`listid=2`），红心等价于向该歌单增删曲目：
+
+- 加：`modules/playlist_edit.ts` 的 `playlistAddSongs`（`/cloudlist.service/v6/add_song`）
+- 删：`playlistDeleteSongs`（`/v4/delete_songs`），参数是歌单内 `fileid`
+
+`useFavorite` 的 `isLiked` / `isSupported` / `toggle` 已覆盖 `kugou` 来源。
 
 ## 听歌上报
 
@@ -47,8 +80,11 @@
 
 - `modules/user_cloud.ts`：列表、删除、播放地址
 - 云盘域名 `mcloudservice.kugou.com` 不参与通用签名，`p` 参数由 RSA 包装 AES 密钥，正文为 AES 密文（aes-128-cbc，base64）
+- 列表 `/v1/get_list`、删除 `/v1/del_files`（body `{data:[{kv_id,album_audio_id}]}`，`kv_id` 来自列表条目）
+- 播放地址走 `gateway.kugou.com/bsstrackercdngz/v2/query_musicclound_url`，`key` 是云盘专用 `md5("musicclound"+hash+pid+"ebd1ac…e2e7")`，且必须带 `token` 与 `signature`
 - 云盘曲目以 `comment = "kugou-cloud"` 标记，音源解析据此走 `user_cloud_url`
 - `pages/Cloud.vue` 的列表来源标识按当前平台决定
+- 上传见 `services/kugouCloudUpload.ts`
 
 ## fork 身份
 
@@ -58,28 +94,38 @@
 
 ## 非目标
 
-- 酷狗云盘上传（`user_cloud_upload` 涉及分片与曲库匹配，未实现）
 - 酷狗歌手榜、新碟、雷达歌单
 - MV、电台、KTV、直播、听歌房、青春频道
 - 网易云既有链路的行为变更
 
 ## 验证
 
-| 项           | 命令                                                          | 结果                                |
-| ------------ | ------------------------------------------------------------- | ----------------------------------- |
-| 类型         | `pnpm typecheck`                                              | 通过                                |
-| Lint         | `pnpm lint`                                                   | 通过                                |
-| 前端测试     | `pnpm test:web`                                               | 75 文件 / 599 用例通过              |
-| 主进程测试   | `pnpm test:node`                                              | 53 用例通过                         |
-| 平台分派单测 | `npx vitest run src/stores/data.spec.ts`                      | 5/5 通过                            |
-| AES 封装单测 | `npx vitest run electron/main/apis/kugou/core/crypto.spec.ts` | 4/4 通过                            |
-| 启动         | `pnpm dev`                                                    | Electron 启动，三个原生模块加载成功 |
+| 项           | 命令                                                          | 结果                   |
+| ------------ | ------------------------------------------------------------- | ---------------------- |
+| 类型         | `pnpm typecheck`                                              | 通过                   |
+| Lint         | `npx eslint <改动文件>`                                       | 通过                   |
+| 前端测试     | `pnpm test:web`                                               | 75 文件 / 599 用例通过 |
+| 主进程测试   | `pnpm test:node`                                              | 53 用例通过            |
+| 平台分派单测 | `npx vitest run src/stores/data.spec.ts`                      | 5/5 通过               |
+| AES 封装单测 | `npx vitest run electron/main/apis/kugou/core/crypto.spec.ts` | 4/4 通过               |
 
-未验证：酷狗账号的实际扫码登录，以及全部新增接口的真实响应。需要真实账号。
+真实账号（概念版，VIP）实测：
+
+| 项         | 结果                                                           |
+| ---------- | -------------------------------------------------------------- |
+| 用户歌单   | 3 个，`listid` 1/2/3，「我喜欢」430 首                         |
+| 歌单曲目   | 分页 300/页，`relate_goods` 四档齐全                           |
+| 每日推荐   | 30 首                                                          |
+| 付费曲取流 | 完整 320k，`/yp/full/`，`isTrial:false`                        |
+| 红心增删   | 430 → 431 → 430                                                |
+| 听歌上报   | 上报后曲目出现在 `/playhistory/v1/get_songs`                   |
+| 用户资料   | `isVip:true`（`busi_vip` 中 `concept/tvip` 有效，`svip` 无效） |
+| 播放       | 日志「加载成功」，URL 含 `ap3116`、`pi411`、`qu320`、`mx0`     |
+| 云盘       | 五步分片上传后列表出现新曲目，取流与删除均成功                 |
+
+未验证：`/v2/get_res_privilege/lite` 返回的 `high` 档（账号非超级 VIP）。
 
 ## 已知风险
 
-- 各接口的响应结构依据 `KuGouMusicApi` 与 `MoeKoeMusic` 的消费方式推断，字段名可能存在个别差异
-- `special_recommend` 的 body 键序要求来自 `kugou-tui` 的实现注释，未在本仓库独立验证
-- 云盘 `del_song` 的接口路径与参数未经实际调用确认
+- `special_recommend` 的 body 键序参数字段来自 `kugou-tui` 的实现注释，本仓库实测可返回 40 条，键序改动未验证
 - 关注歌手依赖通用 AES 与 RSA 的组合，密钥生成方式按上游实现复刻，未实测

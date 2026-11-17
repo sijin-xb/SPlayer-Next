@@ -67,7 +67,7 @@ const handlePick = async (playlistId: string): Promise<void> => {
       count = await playlistStore.addTracks(playlistId, props.tracks);
     } else {
       const ids = props.tracks.map((track) => track.id);
-      count = await userStore.addTracksToPlaylist(playlistId, ids);
+      count = await userStore.addTracksToPlaylist(playlistId, ids, props.tracks);
     }
     if (count > 0) {
       toast.success(t("collection.tracksAdded", { count }));

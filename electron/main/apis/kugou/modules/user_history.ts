@@ -2,17 +2,16 @@ import type { KGModule } from "../core/types";
 import type { KGSong } from "@shared/types/platform/kugou";
 import { getSessionCookies } from "@main/database/sessions";
 import { kgGatewayRequest } from "../core/request";
-import { normalizeKGSong } from "../core/song";
+import { normalizeFlatSong } from "../core/song";
 
+/** 听歌记录条目，真实曲目字段全部在 info 内 */
 interface KGHistoryItem {
-  audio_info?: { hash?: string; audio_id?: number };
-  base?: { audio_id?: number; audio_name?: string; author_name?: string };
-  [key: string]: unknown;
+  mxid?: number;
+  info?: Record<string, unknown>;
 }
 
 interface KGHistoryResponse {
-  data?: { info?: KGHistoryItem[]; songs?: KGHistoryItem[] };
-  songs?: KGHistoryItem[];
+  data?: { songs?: KGHistoryItem[] };
 }
 
 /**
@@ -36,10 +35,9 @@ const userHistory: KGModule = async (params) => {
     },
   });
 
-  const list = response.data?.info ?? response.data?.songs ?? response.songs ?? [];
   // 无 hash 的条目无法解析播放地址，直接丢弃
-  const songs: KGSong[] = list
-    .map((item) => normalizeKGSong(item as never))
+  const songs: KGSong[] = (response.data?.songs ?? [])
+    .map((item) => normalizeFlatSong(item.info ?? {}))
     .filter((song) => Boolean(song.hash));
 
   return { code: 200, songs };

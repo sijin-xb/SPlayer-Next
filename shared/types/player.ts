@@ -66,6 +66,8 @@ export interface Playlist {
   trackCount?: number;
   /** 创建者 */
   owner?: string;
+  /** 是否为账号的「我喜欢的音乐」，平台未标注时由调用方按位置兜底 */
+  isLiked?: boolean;
 }
 
 /** 音质信息 */

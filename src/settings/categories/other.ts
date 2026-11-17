@@ -2,6 +2,8 @@ import type { SettingCategory } from "@/types/settings-schema";
 import PlatformAccount from "@/components/settings/custom/PlatformAccount.vue";
 import SkipKeywordsConfig from "@/components/settings/custom/SkipKeywordsConfig.vue";
 import IconLucideSettings from "~icons/lucide/settings";
+import { useDataStore } from "@/stores/data";
+import { useUserStore } from "@/stores/user";
 
 const otherCategory: SettingCategory = {
   id: "other",
@@ -53,11 +55,17 @@ const otherCategory: SettingCategory = {
             { value: "standard", labelKey: "settings.kugouLoginVersion.standard" },
             { value: "concept", labelKey: "settings.kugouLoginVersion.concept" },
           ],
-          defaultValue: "standard",
+          defaultValue: "concept",
           confirm: {
             titleKey: "settings.confirm.kugouLoginVersionTitle",
             contentKey: "settings.confirm.kugouLoginVersionContent",
             type: "warning",
+          },
+          action: async () => {
+            // 旧凭据与新 appid 不匹配，切换后必须重新扫码，直接清掉避免半失效状态
+            await window.api.apis.clearSession("kugou");
+            useDataStore().clearPlatformProfile("kugou");
+            await useUserStore().loadKugouContent();
           },
         },
       ],

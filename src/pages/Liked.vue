@@ -8,6 +8,7 @@ import { useLibraryStore } from "@/stores/library";
 import { useUserStore } from "@/stores/user";
 import { useSettingsStore } from "@/stores/settings";
 import { useStatusStore } from "@/stores/status";
+import { useDataStore } from "@/stores/data";
 import SongList from "@/components/list/SongList.vue";
 import * as player from "@/core/player";
 import IconLucideListChecks from "~icons/lucide/list-checks";
@@ -17,13 +18,14 @@ const { t } = useI18n();
 const library = useLibraryStore();
 const user = useUserStore();
 const settings = useSettingsStore();
+const data = useDataStore();
 
 /** 当前在线平台，决定列表来源与登录判断 */
 const onlineSource = computed(() => settings.system.system.onlinePlatform);
 
 /** 当前平台是否已登录 */
 const onlineLoggedIn = computed(() =>
-  onlineSource.value === "netease" ? user.isLoggedIn : user.playlists.length > 0,
+  onlineSource.value === "netease" ? user.isLoggedIn : data.isActivePlatformLoggedIn,
 );
 const status = useStatusStore();
 
@@ -52,7 +54,7 @@ const localTracks = computed<Track[]>(() => {
 });
 
 watch(
-  () => [tab.value, user.isLoggedIn, user.likedPlaylistId] as const,
+  () => [tab.value, onlineLoggedIn.value, user.likedPlaylistId] as const,
   ([nextTab, loggedIn, plId]) => {
     if (nextTab !== "online" || !loggedIn || !plId) return;
     user.ensureLikedPlaylist();
@@ -75,7 +77,7 @@ const playbackContext = computed<PlaybackContext | undefined>(() => {
   }
   if (!user.likedPlaylistId) return undefined;
   return {
-    provider: "netease",
+    provider: onlineSource.value,
     originId: user.likedPlaylistId,
     originType: "playlist",
     originName: t("liked.title"),
@@ -204,16 +206,6 @@ const handleMoreMenu = (key: string): void => {
         </div>
       </div>
       <!-- 在线 tab -->
-      <div
-        v-else-if="tab === 'online' && onlineSource !== 'netease'"
-        key="online-unsupported"
-        class="flex-1 flex items-center justify-center"
-      >
-        <div class="text-center text-on-surface-variant/50">
-          <IconMaterialSymbolsFavoriteOutlineRounded class="size-12 mx-auto mb-3 opacity-30" />
-          <div class="text-sm">{{ t("liked.unsupportedPlatform") }}</div>
-        </div>
-      </div>
       <div
         v-else-if="tab === 'online' && !onlineLoggedIn"
         key="online-login"

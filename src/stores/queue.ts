@@ -21,6 +21,14 @@ const restoreQueueItem = (value: PersistedQueueItem): PlaybackQueueItem => {
   return { track: value as Track };
 };
 
+/** 空 id 的曲目无法取流，历史脏数据在恢复时丢弃 */
+const isValidQueueItem = (item: PlaybackQueueItem): boolean => {
+  const track = item.track;
+  if (!track || typeof track !== "object") return false;
+  if (typeof track.id !== "string" || track.id.length === 0) return false;
+  return typeof track.title === "string";
+};
+
 const createQueueItem = (track: Track, context?: PlaybackContext): PlaybackQueueItem =>
   context ? { track, context } : { track };
 
@@ -50,8 +58,8 @@ export const restoreQueue = async (): Promise<void> => {
       db.getItem<PersistedQueueItem[] | null>("originalPlayList"),
     ]);
     if (!list?.length) return;
-    queueEntries.value = list.map(restoreQueueItem);
-    originalQueue.value = original?.map(restoreQueueItem) ?? null;
+    queueEntries.value = list.map(restoreQueueItem).filter(isValidQueueItem);
+    originalQueue.value = original?.map(restoreQueueItem).filter(isValidQueueItem) ?? null;
   } catch (e) {
     console.error("[queue] 恢复持久化数据失败:", e);
   }

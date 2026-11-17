@@ -55,7 +55,7 @@ const progress = createPlayProgress<PlaybackRound>({
   },
 });
 
-/** 只上报酷狗来源的曲目，mxid 取 audio_id */
+/** 只上报酷狗来源的曲目，mxid 取 mixsongid（Track.extId），audio_id 上报不会被计入 */
 const toRound = (track: Track | null): PlaybackRound | null => {
   if (!track || track.source !== "kugou") return null;
   const mxid = Number(track.extId ?? 0);

@@ -24,6 +24,31 @@ interface KGUserPlaylistTracksResponse {
   total?: number;
 }
 
+/** 歌单接口单页上限，超过需翻页 */
+const USER_TRACKS_PAGE_SIZE = 300;
+
+/**
+ * 分页拉取自有歌单全部曲目
+ * 接口按 sort 降序返回（sort 越大加入越早），倒序后与客户端一致：最新加入在前，专辑歌单则回归曲序
+ * @param listid - 酷狗歌单 id（数字 listid）
+ * @returns 该歌单全部 Track
+ */
+export const fetchOwnPlaylistTracks = async (listid: string): Promise<Track[]> => {
+  const collected: KGSong[] = [];
+  for (let page = 1; ; page++) {
+    const response = await kugouCall<KGUserPlaylistTracksResponse>("user_playlist_tracks", {
+      listid,
+      page,
+      pageSize: USER_TRACKS_PAGE_SIZE,
+    });
+    const songs = response.songs ?? [];
+    collected.push(...songs);
+    const total = Number(response.total ?? 0);
+    if (songs.length < USER_TRACKS_PAGE_SIZE || (total > 0 && collected.length >= total)) break;
+  }
+  return kgSongsToTracks(collected.reverse());
+};
+
 /**
  * 获取 KG 歌单详情与歌曲列表
  * 当前用户自己的歌单走 file 接口以取得 fileid，其余走公开歌单接口
@@ -37,23 +62,19 @@ export const fetchKugouPlaylist = async (
 ): Promise<{ playlist: Playlist; tracks: Track[] }> => {
   const user = useUserStore();
   const own = user.playlists.find((item) => String(item.id) === String(id));
-
-  if (own) {
-    const response = await kugouCall<KGUserPlaylistTracksResponse>("user_playlist_tracks", {
-      listid: id,
-      page: 1,
-      pageSize: 300,
-    });
-    const tracks = kgSongsToTracks(response.songs);
+  // 歌单列表未加载时无法区分自建与公开歌单，按自建试读，空结果再回退公开接口
+  const ownTracks =
+    own || user.playlists.length === 0 ? await fetchOwnPlaylistTracks(id).catch(() => []) : [];
+  if (own || ownTracks.length > 0) {
     return {
       playlist: {
-        id: String(own.id ?? id),
-        name: own.name || fallbackName,
-        cover: own.cover ?? tracks[0]?.cover,
-        owner: own.owner,
-        trackCount: own.trackCount ?? response.total ?? tracks.length,
+        id: String(own?.id ?? id),
+        name: own?.name || fallbackName,
+        cover: own?.cover ?? ownTracks[0]?.cover,
+        owner: own?.owner,
+        trackCount: own?.trackCount ?? ownTracks.length,
       },
-      tracks,
+      tracks: ownTracks,
     };
   }
 

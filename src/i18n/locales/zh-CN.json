@@ -657,8 +657,7 @@
       "needLogin": "请先登录账号",
       "unsupported": "该来源暂不支持喜欢",
       "failed": "操作失败，请稍后重试"
-    },
-    "unsupportedPlatform": "酷狗没有「我喜欢的音乐」，请从歌单中浏览收藏内容"
+    }
   },
   "cloud": {
     "title": "我的云盘",

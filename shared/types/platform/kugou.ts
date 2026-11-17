@@ -62,4 +62,6 @@ export interface KGPlaylistItem {
   creator: string;
   trackCount: number;
   playCount: number;
+  /** 是否为账号的「我喜欢」歌单，由接口的 is_def 标识 */
+  isLiked?: boolean;
 }

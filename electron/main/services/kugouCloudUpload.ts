@@ -99,7 +99,7 @@ export const uploadToKugouCloud = async (filePath: string): Promise<CloudUploadR
       },
     );
     const first = (matchResponse.data?.[0] ?? null) as Record<string, unknown> | null;
-    if (first) {
+    if (first && first.hash) {
       match = {
         albumAudioId: Number(first.album_audio_id ?? 0),
         audioId: Number(first.audio_id ?? 0),

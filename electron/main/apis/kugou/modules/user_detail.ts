@@ -35,14 +35,21 @@ const userDetail: KGModule = async () => {
   const avatar = data.pic ?? data.userpic ?? data.user_pic ?? data.avatar ?? session.avatar;
   // vip_type 只反映标准版会员；概念版（含签到领取的会员）查 union_vip
   let isVip = Number(data.vip_type ?? 0) > 0;
+  let vipLevel = Number(data.vip_type ?? 0);
   if (!isVip) {
     const unionResp = await kgGatewayRequest<{
-      data?: { busi_vip?: Array<{ is_vip?: number }> };
+      data?: { busi_vip?: Array<{ is_vip?: number; busi_type?: string; product_type?: string }> };
     }>("/v1/get_union_vip", {
       baseURL: "https://kugouvip.kugou.com",
       params: { busi_type: "concept" },
     }).catch(() => null);
-    isVip = unionResp?.data?.busi_vip?.[0]?.is_vip === 1;
+    // 概念版账号可同时持有 tvip（普通会员）与 svip（超级会员）两条记录
+    const active = (unionResp?.data?.busi_vip ?? []).filter(
+      (item) => item.is_vip === 1 && item.busi_type === "concept",
+    );
+    isVip = active.length > 0;
+    if (active.some((item) => item.product_type === "svip")) vipLevel = 3;
+    else if (active.length > 0) vipLevel = 1;
   }
   const nextSession: Record<string, string> = {
     ...session,
@@ -59,7 +66,7 @@ const userDetail: KGModule = async () => {
       nickname: nextSession.nickname || `KG ${session.userid}`,
       avatarUrl: nextSession.avatar || "",
       isVip,
-      vipLevel: Number(nextSession.vip_type || 0),
+      vipLevel,
     },
   };
 };

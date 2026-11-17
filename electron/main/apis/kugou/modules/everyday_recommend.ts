@@ -1,70 +1,12 @@
 import type { KGModule } from "../core/types";
-import type { KGSong, Quality } from "@shared/types/platform/kugou";
+import type { KGSong } from "@shared/types/platform/kugou";
 import { getSessionCookies } from "@main/database/sessions";
 import { kgGatewayRequest } from "../core/request";
-import { decodeName, fillCover } from "../core/config";
-
-interface KGRecommendSong {
-  hash?: string;
-  audio_id?: number;
-  album_audio_id?: number;
-  album_id?: string | number;
-  ori_audio_name?: string;
-  audio_name?: string;
-  songname?: string;
-  author_name?: string;
-  singername?: string;
-  album_name?: string;
-  albumname?: string;
-  time_length?: number;
-  timelength?: number;
-  sizable_cover?: string;
-  img?: string;
-  privilege?: number;
-  pay_type?: number;
-}
+import { normalizeFlatSong, type KGFlatSong } from "../core/song";
 
 interface KGRecommendResponse {
-  data?: { song_list?: KGRecommendSong[] };
-  song_list?: KGRecommendSong[];
+  data?: { song_list?: KGFlatSong[] };
 }
-
-/**
- * 把每日推荐的扁平曲目转成统一的 KGSong
- * 该接口只返回 128k 地址，其余音质在播放时按 hash 再解析
- * @param raw - 接口原始曲目
- * @returns 时长为毫秒的歌曲
- */
-const normalizeRecommendSong = (raw: KGRecommendSong): KGSong => {
-  const hash = raw.hash ?? "";
-  const artist = decodeName(raw.author_name ?? raw.singername ?? "");
-  const duration = raw.time_length ?? raw.timelength ?? 0;
-  const hashes: Partial<Record<Quality, string>> = hash ? { "128k": hash } : {};
-  const coverTpl = raw.sizable_cover ?? raw.img;
-
-  return {
-    id: String(raw.audio_id || hash),
-    audioId: raw.audio_id ?? 0,
-    albumAudioId: raw.album_audio_id,
-    hash,
-    name: decodeName(raw.ori_audio_name ?? raw.audio_name ?? raw.songname ?? ""),
-    artist,
-    artists: artist ? [{ id: artist, name: artist }] : [],
-    album: decodeName(raw.album_name ?? raw.albumname ?? ""),
-    albumId: raw.album_id != null ? String(raw.album_id) : "",
-    cover: fillCover(coverTpl, 300),
-    coverOriginal: fillCover(coverTpl, 480),
-    interval: duration,
-    duration: duration * 1000,
-    qualities: Object.keys(hashes) as Quality[],
-    hashes,
-    sizes: {},
-    pay: {
-      payplay: raw.pay_type ?? 0,
-      privilege: raw.privilege ?? 0,
-    },
-  };
-};
 
 /**
  * 官方每日推荐
@@ -75,6 +17,7 @@ const everydayRecommend: KGModule = async () => {
   const session = getSessionCookies("kugou");
   if (!session.token || !session.userid) throw new Error("KG 未登录，无法获取每日推荐");
 
+  // x-router 决定落到推荐服务，缺失时官方返回空 song_list
   const response = await kgGatewayRequest<KGRecommendResponse>("/everyday_song_recommend", {
     method: "POST",
     headers: { "x-router": "everydayrec.service.kugou.com" },
@@ -84,8 +27,9 @@ const everydayRecommend: KGModule = async () => {
     },
   });
 
-  const rawList = response.data?.song_list ?? response.song_list ?? [];
-  const songs = rawList.filter((item) => item.hash).map(normalizeRecommendSong);
+  const songs: KGSong[] = (response.data?.song_list ?? [])
+    .filter((item) => item.hash)
+    .map((raw) => normalizeFlatSong(raw, { seconds: true }));
 
   if (songs.length === 0) throw new Error("KG 每日推荐返回空列表");
   return { code: 200, songs };

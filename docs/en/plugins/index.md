@@ -1,6 +1,6 @@
 # Plugin overview and architecture
 
-Plugins are JavaScript files that use the injected `splayer` object to extend SPlayer-Next.
+Plugins are JavaScript files that use the injected `splayer` object to extend SPlayer-Kugou.
 
 | Guide                                         | Contents                                                                                    |
 | --------------------------------------------- | ------------------------------------------------------------------------------------------- |

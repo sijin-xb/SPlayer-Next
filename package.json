@@ -1,5 +1,5 @@
 {
-  "name": "splayer-next",
+  "name": "splayer-kugou",
   "productName": "SPlayer-Kugou",
   "desktopName": "top.sijin.splayer_kugou",
   "version": "1.2.1",
@@ -12,13 +12,13 @@
     "email": "imsyy1024@gmail.com",
     "url": "https://imsyy.top"
   },
-  "homepage": "https://splayer-next.imsyy.top",
+  "homepage": "https://github.com/sijin-xb/splayer-kugou",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sijin-xb/SPlayer-Next"
+    "url": "https://github.com/sijin-xb/splayer-kugou"
   },
   "bugs": {
-    "url": "https://github.com/sijin-xb/SPlayer-Next/issues"
+    "url": "https://github.com/sijin-xb/splayer-kugou/issues"
   },
   "license": "AGPL-3.0",
   "license-file": "LICENSE",

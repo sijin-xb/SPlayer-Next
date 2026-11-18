@@ -106,7 +106,7 @@ token 与登录时使用的 appid 绑定。标准版 token 调概念版接口返
 
 ## fork 身份
 
-`appId: top.sijin.splayer-kugou`、`productName: SPlayer-Kugou`、`nsis.guid` 同步修改、更新器指向 `sijin-xb/SPlayer-Next`、`updaterCacheDirName: splayer-kugou-updater`。
+`appId: top.sijin.splayer-kugou`、`productName: SPlayer-Kugou`、`nsis.guid` 同步修改、更新器指向 `sijin-xb/splayer-kugou`、`updaterCacheDirName: splayer-kugou-updater`。
 
 不改会被安装器当成同一产品覆盖，且 fork 会拉取上游 release。
 

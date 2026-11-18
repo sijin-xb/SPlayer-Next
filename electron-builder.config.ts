@@ -193,8 +193,8 @@ const config: Configuration = {
   },
   publish: {
     provider: "github",
-    owner: "SPlayer-Dev",
-    repo: "SPlayer-Next",
+    owner: "sijin-xb",
+    repo: "splayer-kugou",
     channel: updateChannel,
   },
 };

@@ -1,17 +1,12 @@
 <div align="center">
 
-<img alt="SPlayer-Next logo" width="120" height="120" src="public/icons/favicon.png" />
+<img alt="SPlayer-Kugou" width="120" height="120" src="public/icons/favicon.png" />
 
-<h2>SPlayer-Next</h2>
+<h2>SPlayer-Kugou</h2>
 
-<p>🎵 跨平台桌面音乐播放器，支持丰富的歌词展现形式与广泛的音频格式</p>
+<p>基于 SPlayer-Next 的桌面音乐播放器分支，接入酷狗音乐。</p>
 
-<p>「<a href="https://github.com/SPlayer-Dev/SPlayer">SPlayer</a>」的继任版本</p>
-
-[![Stars](https://img.shields.io/github/stars/SPlayer-Dev/SPlayer-Next?style=flat)](https://github.com/SPlayer-Dev/SPlayer-Next/stargazers)
-[![Release](https://img.shields.io/github/v/release/SPlayer-Dev/SPlayer-Next)](https://github.com/SPlayer-Dev/SPlayer-Next/releases)
-[![License](https://img.shields.io/github/license/SPlayer-Dev/SPlayer-Next)](https://github.com/SPlayer-Dev/SPlayer-Next/blob/main/LICENSE)
-[![Issues](https://img.shields.io/github/issues/SPlayer-Dev/SPlayer-Next)](https://github.com/SPlayer-Dev/SPlayer-Next/issues)
+[![License](https://img.shields.io/github/license/sijin-xb/splayer-kugou)](https://github.com/sijin-xb/splayer-kugou/blob/dev/LICENSE)
 
 [English](./README.md) | **简体中文**
 
@@ -19,88 +14,72 @@
 
 ---
 
-## 功能特性
+## 这是什么
 
-- 🎵 **广泛的格式支持** —— MP3、FLAC、WAV、AAC、OGG、APE 等，基于 FFmpeg 解码
-- 📝 **丰富的歌词** —— LRC / QRC / YRC / TTML，逐字高亮与翻译，支持桌面、灵动岛、任务栏歌词窗口
-- 🌐 **流媒体服务** —— Subsonic / Navidrome / Jellyfin / Emby（多服务器、自动连接）
-- 🖥️ **跨平台** —— Windows / macOS / Linux
-- 🎚️ **音乐频谱** —— 实时 FFT 可视化
-- 🏷️ **元信息编辑** —— 编辑本地曲目标签与封面
-- ⬇️ **下载** —— 内置下载管理器
-- 🎧 **系统媒体集成** —— Windows SMTC / Linux MPRIS / macOS Now Playing + Discord RPC
-- ⚡ **高性能音频引擎** —— FFmpeg + Rust
-- 🎨 **自适应主题** —— 基于封面取色，Light / Dark / Auto
-- 📈 **Last.fm Scrobble**
+SPlayer-Kugou 是 [SPlayer-Next](https://github.com/SPlayer-Dev/SPlayer-Next) 的下游分支。在原有的本地播放、歌词与流媒体服务器能力之上，补齐了酷狗音乐的账号、曲库与云盘链路。
 
-## 开发
+与上游的差异集中在 `electron/main/apis/kugou/`、`src/apis/*/kugou.ts` 与平台分派层，其余代码跟随上游 `dev` 分支。
 
-### 环境要求
+## 下载
 
-- **Node.js** >= 22
-- **pnpm** >= 10
-- **Rust 工具链**（构建原生模块所需，见下）
+安装包发布在 [Releases](https://github.com/sijin-xb/splayer-kugou/releases)：
 
-### 原生模块
+| 平台    | 格式                               |
+| ------- | ---------------------------------- |
+| Windows | 安装版（含自动更新）、单文件便携版 |
+| macOS   | dmg                                |
+| Linux   | AppImage、deb、rpm、pacman、tar.gz |
 
-核心性能特性由 Rust 编写的原生模块提供：
+Linux 产物名为 `splayer-kugou-<版本>-<架构>.<扩展名>`，可执行文件为 `SPlayer-Kugou`。
 
-| 模块            | 说明                                               |
-| --------------- | -------------------------------------------------- |
-| `audio-engine`  | 高性能音频解码（FFmpeg）、播放、FFT 频谱、封面提取 |
-| `media-ctrl`    | 系统媒体控制 + Discord Rich Presence               |
-| `taskbar-lyric` | Windows 任务栏歌词原生渲染                         |
+> 更新器与下载页指向 `sijin-xb/splayer-kugou`。GitHub 仓库需先完成改名并发布 release，否则检查更新会失败。
 
-`pnpm dev` 与 `pnpm build` 会自动编译原生模块。若只做 UI 开发想跳过，可设置 `SKIP_NATIVE_BUILD=true`。
+## 酷狗支持
 
-### 快速开始
+登录入口：**设置 → 其他设置 → 平台登录**，或在登录弹窗顶部切换到 KG。
+
+| 能力                                  | 状态               |
+| ------------------------------------- | ------------------ |
+| 扫码登录、Cookie 登录，标准版与概念版 | 可用               |
+| 搜索单曲、专辑、歌手、歌单            | 可用               |
+| 歌曲取流，高音质无权益时自动降档      | 可用               |
+| 每日推荐、推荐歌单                    | 可用               |
+| 用户歌单、我喜欢（红心增删）          | 可用               |
+| 歌手关注与取关                        | 可用               |
+| 播放历史、听歌历史上报                | 可用，上报默认关闭 |
+| 云盘列表、上传、秒传匹配、删除、取流  | 可用               |
+| 歌曲评论                              | 可用，仅热门       |
+| 歌单收藏、专辑收藏                    | 未接通，按钮隐藏   |
+
+登录版本在 **设置 → 其他设置 → 平台配置** 中切换。标准版与概念版的凭据不通用，切换后需重新扫码。
+
+## 已知限制
+
+- 歌单收藏与专辑收藏的接口未接通，酷狗下不显示收藏按钮。
+- 首页推荐只取推荐歌单，雷达、歌手、新碟区块为空。
+- `high` 音质档与云盘秒传完整命中链路未用真实账号验证。
+- 酷狗评论只提供热门分类。
+- 未实现歌手榜、新碟、MV、电台、KTV、直播等模块。
+
+## 从源码构建
+
+需要 Node.js >= 24、pnpm >= 12 与 Rust 工具链。
 
 ```bash
-# 1. 安装依赖
 pnpm install
-
-# 2. 启动开发（先以 debug 构建原生模块，再启动 Electron）
-pnpm dev
+pnpm dev          # 开发模式，先以 debug 构建原生模块
+pnpm build        # 完整构建：清理 → 原生模块 → 类型检查 → electron-vite
+pnpm build:linux  # 打包，另有 build:win / build:mac
 ```
 
-### 构建
+只改前端时可设 `SKIP_NATIVE_BUILD=true` 跳过 Rust 编译。
 
-```bash
-pnpm build         # 完整构建：清理 → 原生模块 → 类型检查 → electron-vite
+原生模块位于 `native/`，共 7 个 crate：`audio-engine`、`audio-capture`、`media-ctrl`、`taskbar-lyric`、`taskbar-thumbnail`、`opencc`、`automix-worker`。
 
-pnpm build:win     # 打包 Windows
-pnpm build:mac     # 打包 macOS
-pnpm build:linux   # 打包 Linux（AppImage / deb / rpm / tar.gz / pacman）
-```
+校验命令：`pnpm typecheck`、`pnpm lint`、`pnpm test`、`pnpm test:native`。
 
-> 默认仅构建当前架构，暂不支持交叉编译。
+## 许可
 
-### 其他脚本
+沿用上游的 [AGPL-3.0](LICENSE) 许可。原作者与版权信息见 [SPlayer-Next](https://github.com/SPlayer-Dev/SPlayer-Next)。
 
-```bash
-pnpm typecheck        # tsc + vue-tsc（node + web 双目标）
-pnpm lint             # ESLint
-pnpm format           # Prettier
-pnpm build:native     # 仅构建 Rust 原生模块（加 `--dev` 为 debug 构建）
-```
-
-## 致谢
-
-特别感谢以下让 SPlayer-Next 成为可能的开源项目：
-
-- [applemusic-like-lyrics](https://github.com/Steve-xmh/applemusic-like-lyrics) —— 类 Apple Music 歌词显示组件库
-- [NeteaseCloudMusicApiEnhanced](https://github.com/neteasecloudmusicapienhanced/api-enhanced) —— 网易云音乐 API 备份 + 增强
-
-## 开源许可
-
-本项目基于 [GNU Affero General Public License v3.0 (AGPL-3.0)](https://www.gnu.org/licenses/agpl-3.0.html) 许可开源。
-
-- **修改与分发：** 任何修改或分发都必须同样基于 **AGPL-3.0**，并一并提供完整源代码。
-- **派生作品：** 必须同样采用 **AGPL-3.0**，并在适当位置保留本项目的许可与版权信息。
-- **署名：** 必须保留原作者及版权信息。可为二次开发添加你自己的署名，但不得移除或篡改原始信息。
-- **商业用途：** 如用于售卖或其他盈利用途，必须提供源代码及原项目链接。由于本项目涉及第三方服务，商业使用可能存在法律风险。
-- **免责：** 本软件按「现状」提供，不附带任何形式的担保，详见 AGPL-3.0。
-
-## 免责声明
-
-本项目仅供个人学习与研究使用，禁止用于商业及非法用途。部分功能依赖第三方 API，使用者须自行确保其使用符合相关法律法规及服务协议。对于因使用本项目而产生的任何直接或间接后果，作者不承担任何责任。
+修改与分发需同样以 AGPL-3.0 提供完整源码，并保留原始版权声明。

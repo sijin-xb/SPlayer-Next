@@ -2,9 +2,9 @@
 layout: home
 
 hero:
-  name: "SPlayer-Next"
+  name: "SPlayer-Kugou"
   text: "Music, the way it should be"
-  tagline: A clean and refined cross-platform desktop music player with broad format support, expressive lyrics, deep performance optimization, and carefully crafted details.
+  tagline: A desktop music player fork of SPlayer-Next that adds KuGou Music on top of local playback and streaming support.
   actions:
     - theme: brand
       text: Download
@@ -14,9 +14,12 @@ hero:
       link: /en/guide
     - theme: alt
       text: GitHub
-      link: https://github.com/SPlayer-Dev/SPlayer-Next
+      link: https://github.com/sijin-xb/splayer-kugou
 
 features:
+  - icon: 🎧
+    title: KuGou Music
+    details: QR sign-in with search, track resolution, daily recommendations, playlists, likes, artist follows, cloud drive, and scrobble upload.
   - icon: 🎵
     title: Broad format support
     details: A high-performance FFmpeg + Rust audio engine supporting MP3, FLAC, WAV, AAC, OGG, APE, and more, with fades, loudness normalization, and an equalizer.

@@ -3,9 +3,9 @@
 layout: home
 
 hero:
-  name: "SPlayer-Next"
+  name: "SPlayer-Kugou"
   text: "听音乐，本该如此"
-  tagline: 一款简洁而精致的多平台桌面音乐播放器。支持多种音频格式与丰富的歌词展现形式，性能经过深度优化，每一处细节都恰到好处。
+  tagline: 基于 SPlayer-Next 的桌面音乐播放器分支，在原有本地播放与流媒体能力上接入酷狗音乐。
   actions:
     - theme: brand
       text: 立即下载
@@ -15,9 +15,12 @@ hero:
       link: /guide
     - theme: alt
       text: GitHub
-      link: https://github.com/SPlayer-Dev/SPlayer-Next
+      link: https://github.com/sijin-xb/splayer-kugou
 
 features:
+  - icon: 🎧
+    title: 酷狗音乐支持
+    details: 扫码登录酷狗账号，搜索、取流、每日推荐、用户歌单、我喜欢、歌手关注、云盘与听歌历史上报均已接通。
   - icon: 🎵
     title: 广泛的格式支持
     details: 基于 FFmpeg + Rust 的高性能音频引擎，支持 MP3、FLAC、WAV、AAC、OGG、APE 等众多格式，渐入渐出、音量均衡、均衡器一应俱全。

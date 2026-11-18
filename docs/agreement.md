@@ -1,12 +1,15 @@
 <!-- agreement-version: 3 -->
 
-# SPlayer Next 用户协议与免责声明
+# SPlayer-Kugou 用户协议与免责声明
 
 **版本：v1.2**<br>
 **生效日期：2026 年 5 月 29 日**<br>
 **最近更新：2026 年 8 月 12 日**
 
-欢迎使用 SPlayer Next（以下简称“本软件”）。本软件是一款免费、开源的跨平台桌面音乐播放器。在您下载、安装、复制、运行或以任何方式使用本软件之前，请务必认真阅读并充分理解本协议的全部内容，**尤其是以加粗或其他显著方式标识的免除或限制责任、争议解决与适用法律等条款**。
+> [!NOTE]
+> 本协议沿用上游 SPlayer-Next。本软件是 SPlayer-Next 的下游分支，源码与问题反馈见 <https://github.com/sijin-xb/splayer-kugou>。上游项目与原始著作权归 `SPlayer-Dev` 及项目作者所有。
+
+欢迎使用 SPlayer-Kugou（以下简称“本软件”）。本软件是一款免费、开源的跨平台桌面音乐播放器。在您下载、安装、复制、运行或以任何方式使用本软件之前，请务必认真阅读并充分理解本协议的全部内容，**尤其是以加粗或其他显著方式标识的免除或限制责任、争议解决与适用法律等条款**。
 
 如您不同意本协议的任何内容，请立即停止安装与使用并删除本软件。**您一旦下载、安装或使用本软件，即视为已阅读、理解并同意接受本协议的全部条款。** 若您是未成年人，请在监护人陪同下阅读并决定是否使用本软件。
 
@@ -50,7 +53,7 @@
 
   3.3 **网络远程交互条款（AGPL 核心）**：若您修改本软件，并通过计算机网络向第三方提供与之交互的服务（包括但不限于 Web、API 或远程访问），您必须依据 AGPL-3.0 第 13 条向该等用户提供您所运行版本的完整对应源代码。
 
-  3.4 本软件官方源代码托管地址为：<https://github.com/SPlayer-Dev/SPlayer-Next>。
+  3.4 本分支源代码托管地址为：<https://github.com/sijin-xb/splayer-kugou>；上游项目地址为 <https://github.com/SPlayer-Dev/SPlayer-Next>。
 
   3.5 本协议用于说明软件功能、第三方服务风险、商标与适用法律等事项，不限制 AGPL-3.0 已授予的权利。当本协议与 AGPL-3.0 存在冲突时，**以 AGPL-3.0 为准**。
 
@@ -156,7 +159,7 @@
 
 ## 十、官方分发渠道与安全风险
 
-10.1 **官方渠道**：本软件的官方版本信息与原始安装包发布于 GitHub 仓库 <https://github.com/SPlayer-Dev/SPlayer-Next>，官方网站 <https://splayer-next.imsyy.top> 提供文档与下载入口。
+10.1 **官方渠道**：本分支的版本信息与安装包发布于 GitHub 仓库 <https://github.com/sijin-xb/splayer-kugou>，文档随仓库内 `docs/` 目录发布。
 
 10.2 **第三方线路与再分发**：官方网站可能提供第三方下载加速线路，它们仅代理 GitHub 上的官方资源，请求会经过相应第三方服务。除此之外，第三方网站、网盘、应用商店、论坛或个人提供的转载、重新打包或再分发均不受开发者控制，**不构成官方发布行为**。
 
@@ -242,10 +245,9 @@
 
 如对本协议有任何疑问、意见或需要反馈问题，您可通过以下方式联系：
 
-- **GitHub 仓库**：<https://github.com/SPlayer-Dev/SPlayer-Next>
-- **问题反馈**：<https://github.com/SPlayer-Dev/SPlayer-Next/issues>
-- **官方网站**：<https://splayer-next.imsyy.top>
-- **电子邮箱**：imsyy1024@gmail.com
+- **GitHub 仓库**：<https://github.com/sijin-xb/splayer-kugou>
+- **问题反馈**：<https://github.com/sijin-xb/splayer-kugou/issues>
+- **上游项目**：<https://github.com/SPlayer-Dev/SPlayer-Next>
 
 ---
 

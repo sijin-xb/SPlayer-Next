@@ -1,6 +1,6 @@
 # MCP Interface
 
-SPlayer-Next includes a [Model Context Protocol](https://modelcontextprotocol.io/) service that lets MCP clients inspect playback, search the local library, and control the player.
+SPlayer-Kugou includes a [Model Context Protocol](https://modelcontextprotocol.io/) service that lets MCP clients inspect playback, search the local library, and control the player.
 
 ## Connection
 
@@ -25,7 +25,7 @@ MCP is disabled by default. Enable **Settings → AI Integration → MCP**, then
 }
 ```
 
-Client configuration fields vary. Keep SPlayer-Next running while the client is connected.
+Client configuration fields vary. Keep SPlayer-Kugou running while the client is connected.
 
 ## Tools
 

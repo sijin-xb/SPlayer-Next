@@ -2,7 +2,7 @@
 title: Download
 ---
 
-# Download SPlayer-Next
+# Download SPlayer-Kugou
 
 The list below fetches the latest release for the selected channel from GitHub and recommends a package for your system. Stable is selected by default. If GitHub is slow, choose a download mirror.
 
@@ -20,8 +20,8 @@ Beta is promoted from Nightly every week, and Nightly is built every day. Change
 
 ## Other sources
 
-- **Previous versions:** Browse all archived builds on [GitHub Releases](https://github.com/SPlayer-Dev/SPlayer-Next/releases).
-- **Development builds:** Download the latest workflow artifact from [GitHub Actions](https://github.com/SPlayer-Dev/SPlayer-Next/actions). A GitHub account is required.
+- **Previous versions:** Browse all archived builds on [GitHub Releases](https://github.com/sijin-xb/splayer-kugou/releases).
+- **Development builds:** Download the latest workflow artifact from [GitHub Actions](https://github.com/sijin-xb/splayer-kugou/actions). A GitHub account is required.
 
 ## Installation notes
 
@@ -29,31 +29,7 @@ Beta is promoted from Nightly every week, and Nightly is built every day. Change
 - **macOS:** If macOS reports that the app is damaged or cannot verify it, see [macOS reports a damaged app](/en/troubleshooting/macos-damaged).
 - **Linux:** Choose AppImage if you are unsure which package format your distribution uses. See [Ubuntu sandbox startup failure](/en/troubleshooting/ubuntu-sandbox) for launch errors.
 
-## Linux installation
-
-### Arch Linux
-
-SPlayer-Next is now available in the [Arch Linux Chinese Community Repository](https://www.archlinuxcn.org/archlinux-cn-repo-and-mirror/).
-
-If the repository is not configured yet, follow the [wiki](https://wiki.archlinuxcn.org/zh/Arch_Linux_%E4%B8%AD%E6%96%87%E7%A4%BE%E5%8C%BA%E4%BB%93%E5%BA%93) to set it up.
-
-Once configured, install it directly:
-
-```bash
-sudo pacman -S splayer-next
-```
-
-The repository also provides a debug symbols package, useful when investigating crashes:
-
-```bash
-sudo pacman -S splayer-next-debug
-```
-
-> [!IMPORTANT]
-> If the package is out of date, or you run into an error caused by packaging, **please do not report it in this project's repository, but to the Arch Linux Chinese Community Repository**.
-> Open an issue [here](https://github.com/archlinuxcn/repo/issues/new/choose), or [email the package maintainer](mailto:nlsdt@archlinuxcn.org).
-
-### Linux package formats
+## Linux package formats
 
 | Format   | Distributions                                    |
 | -------- | ------------------------------------------------ |
@@ -63,24 +39,29 @@ sudo pacman -S splayer-next-debug
 | pacman   | Manjaro                                          |
 | tar.gz   | Generic archive for manual extraction            |
 
+Artifacts are named `splayer-kugou-<version>-<arch>.<ext>`.
+
 ```bash
 # AppImage
-chmod +x ./splayer-next-*.AppImage
-./splayer-next-*.AppImage
-./splayer-next-*.AppImage --appimage-extract
+chmod +x ./splayer-kugou-*.AppImage
+./splayer-kugou-*.AppImage
+./splayer-kugou-*.AppImage --appimage-extract
 
 # deb
-sudo apt install ./splayer-next-*.deb
+sudo apt install ./splayer-kugou-*.deb
 
 # rpm
-sudo dnf install ./splayer-next-*.rpm
-sudo zypper install ./splayer-next-*.rpm
+sudo dnf install ./splayer-kugou-*.rpm
+sudo zypper install ./splayer-kugou-*.rpm
 
 # pacman
-sudo pacman -U ./splayer-next-*.pacman
+sudo pacman -U ./splayer-kugou-*.pacman
 
 # Archive
-tar -xzf ./splayer-next-*.tar.gz
-cd splayer-next-*/
-./SPlayer-Next
+tar -xzf ./splayer-kugou-*.tar.gz
+cd splayer-kugou-*/
+./SPlayer-Kugou
 ```
+
+> [!NOTE]
+> The `splayer-next` package in the Arch Linux Chinese Community Repository is the upstream project, not this fork.

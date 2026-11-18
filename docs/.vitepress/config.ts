@@ -213,6 +213,7 @@ const enTheme: DefaultTheme.Config = {
 };
 
 export default defineConfig({
+  base: process.env.DOCS_BASE ?? "/",
   // pnpm 为同版 Vite 建立了不同的 peer 依赖实例，运行时插件接口一致。
   vite: {
     plugins: llmstxt({ workDir: "en" }) as unknown as NonNullable<UserConfig["vite"]>["plugins"],

@@ -71,10 +71,6 @@
               <span class="dl-size">{{ formatSize(asset.size) }}</span>
             </a>
           </div>
-          <p v-if="userPlatform === 'Linux'" class="dl-rec-note">
-            {{ copy.archHint }}
-            <a :href="archGuideUrl">{{ copy.archHintLink }}</a>
-          </p>
         </div>
 
         <div v-for="group in grouped" :key="group.platform" class="dl-group">
@@ -155,11 +151,6 @@ const formatSize = (bytes: number): string =>
   bytes ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : "";
 
 const PLATFORM_ORDER = ["Windows", "macOS", "Linux"];
-
-/** Arch Linux 小节在中英文页面中的锚点相同 */
-const archGuideUrl = computed(() =>
-  lang.value.startsWith("en") ? "/en/download.html#arch-linux" : "/download.html#arch-linux",
-);
 
 const currentChannel = computed(
   () => channels.value.find((entry) => entry.id === channel.value) ?? channels.value[0],

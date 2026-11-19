@@ -28,4 +28,11 @@ export const migrations: Migration[] = [
       }
     },
   },
+  {
+    // 下载功能改为默认开启，老配置沿用旧默认值 false 时一并打开
+    version: 3,
+    migrate: (data) => {
+      data.download.enabled = true;
+    },
+  },
 ];

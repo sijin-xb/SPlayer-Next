@@ -113,7 +113,7 @@ export const defaultSystemConfig: SystemConfig = {
     motionCoverSizeLimitMb: 300,
   },
   download: {
-    enabled: false,
+    enabled: true,
     dir: null,
     quality: "lossless",
     usePlaybackForDownload: false,

@@ -13,7 +13,7 @@ const downloadCategory: SettingCategory = {
           key: "downloadEnabled",
           type: "switch",
           binding: { store: "settings", path: "system.download.enabled" },
-          defaultValue: false,
+          defaultValue: true,
           hideDescription: true,
         },
         {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { QualityLevel } from "@/utils/quality";
+import { isPlatform } from "@shared/types/platform";
 import { useStatusStore } from "@/stores/status";
 import { useMediaStore } from "@/stores/media";
 import { useSettingsStore } from "@/stores/settings";
@@ -101,7 +102,7 @@ const showComments = (): void => {
         <template #icon><IconLucideMessageCircle /></template>
       </SButton>
       <SButton
-        v-if="displayTrack?.source === 'local' || displayTrack?.source === 'netease'"
+        v-if="displayTrack?.source === 'local' || isPlatform(displayTrack?.source)"
         type="cover"
         variant="ghost"
         size="large"

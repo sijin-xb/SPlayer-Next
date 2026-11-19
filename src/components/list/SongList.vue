@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Artist, PlaybackContext, Track, TrackSource } from "@shared/types/player";
+import { isPlatform } from "@shared/types/platform";
 import type { CollectionType } from "@/types/collection";
 import type { SongListSortKey, SongListSortPreference, SortField, SortOrder } from "@/types/list";
 import { useMediaStore } from "@/stores/media";
@@ -534,7 +535,7 @@ defineExpose({
                 <span>{{ t("songList.batch.download") }}</span>
               </SButton>
               <SButton
-                v-if="source === 'local' || source === 'netease'"
+                v-if="source === 'local' || isPlatform(source)"
                 variant="ghost"
                 size="small"
                 :disabled="batch.selectedCount.value === 0"

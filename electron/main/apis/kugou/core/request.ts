@@ -7,7 +7,12 @@
  */
 
 import { KG_GATEWAY_URL, getKgAppid, getKgClientver } from "./config";
-import { cleanKgResponse, getDeviceMid, signatureAndroidParams } from "./crypto";
+import {
+  cleanKgResponse,
+  decryptKugouDeviceData,
+  getDeviceMid,
+  signatureAndroidParams,
+} from "./crypto";
 import { getSessionCookies } from "@main/database/sessions";
 import { coreLog } from "@main/utils/logger";
 
@@ -61,6 +66,8 @@ export interface GatewayRequestOptions {
   headers?: Record<string, string>;
   notSignature?: boolean;
   timeoutMs?: number;
+  /** 响应体 AES 密钥；传入时按二进制读取并用该密钥解密 */
+  decryptKey?: string;
 }
 
 /**
@@ -81,6 +88,7 @@ export const kgGatewayRequest = async <T = KGRawBody>(
     headers = {},
     notSignature = false,
     timeoutMs = 8000,
+    decryptKey,
   } = options;
 
   const clienttime = Math.floor(Date.now() / 1000);
@@ -147,9 +155,9 @@ export const kgGatewayRequest = async <T = KGRawBody>(
 
   if (!res.ok) throw new Error(`KG Gateway HTTP ${res.status}`);
 
-  const rawText = await res.text();
-  const cleaned = cleanKgResponse(rawText);
-  const body = JSON.parse(cleaned) as KGRawBody;
+  const body = decryptKey
+    ? (decryptKugouDeviceData(Buffer.from(await res.arrayBuffer()), decryptKey) as KGRawBody)
+    : (JSON.parse(cleanKgResponse(await res.text())) as KGRawBody);
 
   const code = body.error_code ?? body.errcode ?? body.err_code ?? 0;
   if (code !== 0 && code !== 200) {

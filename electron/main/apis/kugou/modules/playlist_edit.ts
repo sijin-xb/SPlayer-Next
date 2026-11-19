@@ -98,7 +98,7 @@ export const playlistCreate: KGModule = async (params) => {
   if (!name) throw new Error("KG 歌单名不能为空");
 
   const clienttime = Math.floor(Date.now() / 1000);
-  const response = await kgGatewayRequest<{ data?: { listid?: number | string } }>(
+  const response = await kgGatewayRequest<{ data?: { info?: { listid?: number | string } } }>(
     "/cloudlist.service/v5/add_list",
     {
       method: "POST",
@@ -124,42 +124,105 @@ export const playlistCreate: KGModule = async (params) => {
     },
   );
 
-  return { code: 200, listid: response.data?.listid ?? null };
+  const listid = response.data?.info?.listid;
+  if (listid === undefined || listid === null) throw new Error("KG 创建歌单未返回歌单 ID");
+  return { code: 200, listid: String(listid) };
 };
 
 /**
- * 取消收藏歌单（移除账号下收藏的列表，listid 来自用户歌单里的收藏条目）
+ * 删除歌单：自建歌单删除与收藏歌单取消收藏共用同一接口，服务端按 type 区分
  * 请求规格对齐 kugou-tui 的 KAT：AES 密文 body 参与 android 签名，
- * p 为 RSA 包装的 {aes, uid, token}，路由经 x-router 指向 cloudlist
- * @param params - listid 收藏列表的数字 id
+ * p 为 RSA 包装的 {aes, uid, token}，路由经 x-router 指向 cloudlist；
+ * 响应同为 AES 密文，需用同一把密钥解密
+ * @param params - listid 歌单的数字 id
  * @returns 操作结果
  */
-export const playlistUnsubscribe: KGModule = async (params) => {
+const deleteList: KGModule = async (params) => {
   const session = getSessionCookies("kugou");
-  if (!session.token || !session.userid) throw new Error("KG 未登录，无法取消收藏歌单");
+  if (!session.token || !session.userid) throw new Error("KG 未登录，无法删除歌单");
   const listid = Number(params.listid);
-  if (!listid) throw new Error("KG 取消收藏歌单缺少 listid");
+  if (!listid) throw new Error("KG 删除歌单缺少 listid");
 
   const clienttime = Math.floor(Date.now() / 1000);
   const enc = encryptKugouDeviceData({ listid, total_ver: 0, type: 1 });
-  await kgGatewayRequest("/v2/delete_list", {
-    method: "POST",
-    headers: {
-      "x-router": "cloudlist.service.kugou.com",
-      "Content-Type": "application/x-www-form-urlencoded",
+  const response = await kgGatewayRequest<{ status?: number; error_code?: number }>(
+    "/v2/delete_list",
+    {
+      method: "POST",
+      headers: {
+        "x-router": "cloudlist.service.kugou.com",
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      params: {
+        key: signParamsKey(String(clienttime)),
+        last_area: "gztx",
+        last_time: clienttime,
+        p: rsaEncryptKugouPkcs1({
+          aes: enc.key,
+          uid: session.userid,
+          token: session.token,
+        }).toUpperCase(),
+      },
+      data: enc.content,
+      decryptKey: enc.key,
     },
-    params: {
-      key: signParamsKey(String(clienttime)),
-      last_area: "gztx",
-      last_time: clienttime,
-      p: rsaEncryptKugouPkcs1({
-        aes: enc.key,
-        uid: session.userid,
-        token: session.token,
-      }).toUpperCase(),
-    },
-    data: enc.content,
-  });
+  );
 
+  if (response.status !== 1) throw new Error(`KG 删除歌单失败: code=${response.error_code ?? 0}`);
+  return { code: 200 };
+};
+
+/** 删除自建歌单 */
+export const playlistDelete = deleteList;
+
+/** 取消收藏他人歌单 */
+export const playlistUnsubscribe = deleteList;
+
+/**
+ * 修改歌单名与简介
+ * 该接口不带 x-router，带上会被网关判为 404；
+ * 名称与简介都只在传入时下发，未传的字段由服务端保留原值
+ * @param params - listid 歌单数字 id，name 新名称，intro 新简介
+ * @returns 操作结果
+ */
+export const playlistRename: KGModule = async (params) => {
+  const session = getSessionCookies("kugou");
+  if (!session.token || !session.userid) throw new Error("KG 未登录，无法修改歌单");
+  const listid = Number(params.listid);
+  if (!listid) throw new Error("KG 修改歌单缺少 listid");
+  const name = typeof params.name === "string" ? params.name.trim() : "";
+  const intro = typeof params.intro === "string" ? params.intro : undefined;
+  if (!name && intro === undefined) throw new Error("KG 修改歌单缺少内容");
+  if (typeof params.name === "string" && !name) throw new Error("KG 歌单名不能为空");
+
+  const clienttime = Math.floor(Date.now() / 1000);
+  const enc = encryptKugouDeviceData({
+    listid,
+    total_ver: 0,
+    type: 0,
+    ...(name ? { name } : {}),
+    ...(intro !== undefined ? { intro } : {}),
+  });
+  const response = await kgGatewayRequest<{ status?: number; error_code?: number }>(
+    "/cloudlist.service/v2/modify_list",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      params: {
+        key: signParamsKey(String(clienttime)),
+        last_area: "gztx",
+        last_time: clienttime,
+        p: rsaEncryptKugouPkcs1({
+          aes: enc.key,
+          uid: session.userid,
+          token: session.token,
+        }).toUpperCase(),
+      },
+      data: enc.content,
+      decryptKey: enc.key,
+    },
+  );
+
+  if (response.status !== 1) throw new Error(`KG 修改歌单失败: code=${response.error_code ?? 0}`);
   return { code: 200 };
 };

@@ -24,8 +24,10 @@ const toPlaylist = (item: KGPlaylistItem): Playlist => ({
   name: item.name,
   cover: item.cover,
   owner: item.creator,
+  description: item.description,
   trackCount: item.trackCount,
   isLiked: item.isLiked === true,
+  system: item.system === true,
   collected: item.collected === true,
 });
 

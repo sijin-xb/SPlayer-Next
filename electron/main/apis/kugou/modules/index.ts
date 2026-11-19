@@ -23,7 +23,9 @@ import { cloudDelete, cloudList, cloudUrl } from "./user_cloud";
 import {
   playlistAddSongs,
   playlistCreate,
+  playlistDelete,
   playlistDeleteSongs,
+  playlistRename,
   playlistUnsubscribe,
 } from "./playlist_edit";
 import cloudMatch from "./user_cloud_match";
@@ -52,7 +54,9 @@ export const modules: Record<string, KGModule> = {
   user_cloud_url: cloudUrl,
   playlist_add_songs: playlistAddSongs,
   playlist_create: playlistCreate,
+  playlist_delete: playlistDelete,
   playlist_delete_songs: playlistDeleteSongs,
+  playlist_rename: playlistRename,
   playlist_unsubscribe: playlistUnsubscribe,
   user_cloud_match: cloudMatch,
   user_playlist_tracks: userPlaylistTracks,

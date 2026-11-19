@@ -724,6 +724,10 @@ export const useUserStore = defineStore(
 
     /** 重新获取歌单列表 */
     const refreshPlaylists = async (): Promise<void> => {
+      if (activePlatformIsKugou()) {
+        await loadKugouContent();
+        return;
+      }
       const uid = profile.value?.userId;
       if (!uid) return;
       try {
@@ -744,9 +748,11 @@ export const useUserStore = defineStore(
           name,
           private: privacy === 10,
         });
+        const listid = String(created?.listid ?? "");
+        if (!listid) throw new Error("酷狗新建歌单未返回歌单 ID");
         await loadKugouContent();
-        const found = playlists.value.find((item) => String(item.id) === String(created.listid));
-        return found ?? { id: String(created.listid ?? ""), name, trackCount: 0, owner: "" };
+        const found = playlists.value.find((item) => String(item.id) === listid);
+        return found ?? { id: listid, name, trackCount: 0, owner: "" };
       }
       const created = await apiCreatePlaylist(name, privacy);
       await refreshPlaylists();
@@ -758,6 +764,11 @@ export const useUserStore = defineStore(
      * @param id - 歌单 ID
      */
     const deletePlaylist = async (id: string): Promise<void> => {
+      if (activePlatformIsKugou()) {
+        await kugouCall("playlist_delete", { listid: id });
+        await loadKugouContent();
+        return;
+      }
       await apiDeletePlaylist(id);
       await refreshPlaylists();
     };
@@ -771,6 +782,15 @@ export const useUserStore = defineStore(
       id: string,
       data: { name?: string; description?: string },
     ): Promise<void> => {
+      if (activePlatformIsKugou()) {
+        await kugouCall("playlist_rename", {
+          listid: id,
+          ...(typeof data.name === "string" ? { name: data.name } : {}),
+          ...(typeof data.description === "string" ? { intro: data.description } : {}),
+        });
+        await loadKugouContent();
+        return;
+      }
       const tasks: Promise<void>[] = [];
       if (typeof data.name === "string") tasks.push(updatePlaylistName(id, data.name));
       if (typeof data.description === "string")
@@ -966,7 +986,8 @@ export const useUserStore = defineStore(
     const loadKugouContent = async (): Promise<void> => {
       const listResult = await fetchKugouUserPlaylists().catch((error) => {
         console.warn("[user] kugou playlists load failed:", error);
-        return [] as Playlist[];
+        // 拉取失败保留上一次的歌单，避免新建/改名后列表瞬间清空
+        return playlists.value;
       });
       playlists.value = listResult;
       const uid = kugouProfile.value?.userId ?? profile.value?.userId;

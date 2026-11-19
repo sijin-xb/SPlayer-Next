@@ -31,10 +31,11 @@ export const usePlaylistManage = (
     const current = collection.value;
     if (!current || current.type !== "playlist") return false;
     if (current.source === "local") return true;
-    if (current.source !== "netease") return false;
-    const isCreated = userStore.createdPlaylists.some((item) => item.id === current.id);
-    const isLiked = userStore.likedPlaylistId === current.id;
-    return isCreated && !isLiked;
+    // QQ 音乐尚未接入歌单改名与删除，不暴露入口
+    if (current.source !== "netease" && current.source !== "kugou") return false;
+    const target = userStore.createdPlaylists.find((item) => item.id === current.id);
+    // 平台内置歌单（默认收藏、我喜欢）与红心列表不提供改名和删除
+    return Boolean(target) && !target?.system && current.id !== userStore.likedPlaylistId;
   });
 
   /** 编辑弹窗 */

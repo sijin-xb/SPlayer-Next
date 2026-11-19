@@ -51,12 +51,16 @@ const tabs = computed(() => [
   { key: "artist" satisfies FavTab, label: t("favorites.tabs.artist") },
 ]);
 
-const playlistItems = computed<CoverItem[]>(() =>
-  user.subscribedPlaylists.map((pl) => ({
+/** 歌单 tab：自建在前、收藏在后，「我喜欢」与平台内置歌单不重复列出 */
+const playlistItems = computed<CoverItem[]>(() => {
+  const created = user.createdPlaylists.filter(
+    (pl) => pl.id !== user.likedPlaylistId && !pl.system,
+  );
+  return [...created, ...user.subscribedPlaylists].map((pl) => ({
     ...playlistToCoverItem(pl),
     subtitle: pl.trackCount ? t("common.totalSongs", { count: pl.trackCount }) : "",
-  })),
-);
+  }));
+});
 
 const albumItems = computed<CoverItem[]>(() => albumsToCoverItems(user.albums));
 

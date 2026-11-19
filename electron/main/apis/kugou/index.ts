@@ -40,6 +40,12 @@ const NON_CACHEABLE = new Set([
   "user_cloud_url",
   "everyday_recommend",
   "playhistory_upload",
+  "playlist_create",
+  "playlist_rename",
+  "playlist_delete",
+  "playlist_unsubscribe",
+  "playlist_add_songs",
+  "playlist_delete_songs",
 ]);
 
 interface CacheEntry {

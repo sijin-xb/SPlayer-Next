@@ -62,8 +62,12 @@ export interface KGPlaylistItem {
   creator: string;
   trackCount: number;
   playCount: number;
+  /** 歌单简介，接口字段为 intro */
+  description?: string;
   /** 是否为账号的「我喜欢」歌单，由接口的 is_def 标识 */
   isLiked?: boolean;
+  /** 是否为平台内置歌单（默认收藏、我喜欢），由接口的 is_def 非零标识，不可删除或改名 */
+  system?: boolean;
   /** 是否为收藏（来自他人）的歌单，由接口的 source===2 标识 */
   collected?: boolean;
 }

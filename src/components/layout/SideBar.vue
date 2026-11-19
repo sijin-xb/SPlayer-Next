@@ -57,7 +57,8 @@ const handleCreate = (): void => {
 /** 新建成功后跳转到该歌单 */
 const handleCreated = (playlistId: string, scope: ContentScope): void => {
   status.myPlaylistSource = scope;
-  router.push(`/collection/${scope === "local" ? "local" : "netease"}/playlist/${playlistId}`);
+  const source = scope === "local" ? "local" : systemSettings.system.onlinePlatform;
+  router.push(`/collection/${source}/playlist/${playlistId}`);
 };
 
 /** 我的歌单分组头部 */
@@ -110,25 +111,39 @@ const hiddenKeys = computed(() => new Set(appearance.sidebarHiddenKeys));
 const myPlaylistItems = computed<SMenuItem[]>(() => {
   const showCover = appearance.sidebarPlaylistCover;
   const hidden = hiddenKeys.value;
-  const local = status.myPlaylistSource === "local";
-  const items: SMenuItem[] = local
-    ? playlistStore.playlists.map((pl) => ({
-        key: `/collection/local/playlist/${pl.id}`,
-        label: pl.title,
-        icon: markRaw(IconLucideListMusic),
-        cover: pl.cover ?? "",
-        showCover,
-      }))
-    : userStore.createdPlaylists.slice(1).map((pl) => ({
-        key: `/collection/${systemSettings.system.onlinePlatform}/playlist/${pl.id}`,
-        label: pl.name,
-        icon: markRaw(IconLucideListMusic),
-        cover: pl.cover ?? "",
-        showCover,
-      }));
-  const order = local
-    ? appearance.sidebarPlaylistOrder.myLocal
-    : appearance.sidebarPlaylistOrder.myOnline;
+  // 折叠时分组头的来源切换不可用，本地与在线歌单一起展示，避免歌单无处可见
+  const local = status.myPlaylistSource === "local" || sidebarCollapsed.value;
+  const online = status.myPlaylistSource === "online" || sidebarCollapsed.value;
+  const toItem = (key: string, label: string, cover?: string): SMenuItem => ({
+    key,
+    label,
+    icon: markRaw(IconLucideListMusic),
+    cover: cover ?? "",
+    showCover,
+  });
+  const items: SMenuItem[] = [
+    ...(local
+      ? playlistStore.playlists.map((pl) =>
+          toItem(`/collection/local/playlist/${pl.id}`, pl.title, pl.cover),
+        )
+      : []),
+    ...(online
+      ? userStore.createdPlaylists
+          .slice(1)
+          .map((pl) =>
+            toItem(
+              `/collection/${systemSettings.system.onlinePlatform}/playlist/${pl.id}`,
+              pl.name,
+              pl.cover,
+            ),
+          )
+      : []),
+  ];
+  const order = sidebarCollapsed.value
+    ? [...appearance.sidebarPlaylistOrder.myLocal, ...appearance.sidebarPlaylistOrder.myOnline]
+    : local
+      ? appearance.sidebarPlaylistOrder.myLocal
+      : appearance.sidebarPlaylistOrder.myOnline;
   return applySavedOrder(items, order).filter((item) => !hidden.has(item.key));
 });
 
@@ -219,20 +234,32 @@ const navItems = computed<SMenuItem[]>(() => {
 const menuItems = computed<SMenuItem[]>(() => {
   const hidden = hiddenKeys.value;
   const items = [...navItems.value];
+  const collapsed = sidebarCollapsed.value;
   const showMy = !hidden.has(SIDEBAR_GROUP_MY_PLAYLISTS);
   const showSubscribed =
     !hidden.has(SIDEBAR_GROUP_SUBSCRIBED) &&
-    status.myPlaylistSource === "online" &&
+    (collapsed || status.myPlaylistSource === "online") &&
     subscribedItems.value.length > 0;
   if ((showMy || showSubscribed) && items[items.length - 1]?.type !== "divider")
     items.push({ key: "divider-playlist", type: "divider" });
   if (showMy) {
-    items.push({ key: "my-playlist-group", type: "group", render: renderMyHeader });
+    // 折叠时分组头不可见，用普通菜单项承载新建入口，否则歌单无处创建
+    if (collapsed) {
+      items.push({
+        key: "create-playlist",
+        label: t("collection.create", { type: t("collection.playlist") }),
+        icon: markRaw(IconLucidePlus),
+      });
+    } else {
+      items.push({ key: "my-playlist-group", type: "group", render: renderMyHeader });
+    }
     items.push(...myPlaylistItems.value);
   }
   if (showSubscribed) {
     if (showMy) items.push({ key: "divider-subscribed", type: "divider" });
-    items.push({ key: "subscribed-group", type: "group", render: renderSubscribedHeader });
+    if (!collapsed) {
+      items.push({ key: "subscribed-group", type: "group", render: renderSubscribedHeader });
+    }
     items.push(...subscribedItems.value);
   }
   return items;
@@ -297,6 +324,10 @@ const activeKey = computed(() => {
 });
 
 const onSelect = (key: string) => {
+  if (key === "create-playlist") {
+    handleCreate();
+    return;
+  }
   router.push(key);
 };
 

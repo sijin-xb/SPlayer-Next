@@ -71,6 +71,7 @@ export const fetchKugouPlaylist = async (
         id: String(own?.id ?? id),
         name: own?.name || fallbackName,
         cover: own?.cover ?? ownTracks[0]?.cover,
+        description: own?.description,
         owner: own?.owner,
         trackCount: own?.trackCount ?? ownTracks.length,
       },

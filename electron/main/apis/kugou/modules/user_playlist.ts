@@ -9,6 +9,7 @@ interface KGUserList {
   global_collection_id?: string;
   name?: string;
   listname?: string;
+  intro?: string;
   pic?: string;
   img?: string;
   list_create_username?: string;
@@ -60,7 +61,9 @@ const userPlaylist: KGModule = async (params) => {
       creator: decodeName(raw.list_create_username ?? raw.nickname ?? ""),
       trackCount: Number(raw.count ?? 0),
       playCount: 0,
+      description: decodeName(raw.intro ?? ""),
       isLiked: raw.is_def === 2,
+      system: Boolean(raw.is_def),
       collected: raw.source === 2,
     }))
     .filter((item) => item.id && item.name);

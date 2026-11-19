@@ -57,13 +57,18 @@ const submitting = ref(false);
 /**
  * 分类型添加歌曲
  * @param playlistId 歌单 ID
+ * @param scope 歌单所属类型，新建时可能与弹窗初始类型不同
+ * @returns 是否添加成功
  */
-const handlePick = async (playlistId: string): Promise<void> => {
-  if (submitting.value) return;
+const handlePick = async (
+  playlistId: string,
+  scope: ContentScope = props.mode,
+): Promise<boolean> => {
+  if (submitting.value) return false;
   submitting.value = true;
   try {
     let count = 0;
-    if (props.mode === "local") {
+    if (scope === "local") {
       count = await playlistStore.addTracks(playlistId, props.tracks);
     } else {
       const ids = props.tracks.map((track) => track.id);
@@ -75,13 +80,23 @@ const handlePick = async (playlistId: string): Promise<void> => {
       // 全部重复
       toast.warning(t("collection.alreadyInPlaylist"));
     }
-    emit("update:open", false);
+    return true;
   } catch (err) {
     const message = err instanceof Error && err.message ? err.message : t("liked.toast.failed");
     toast.error(message);
+    return false;
   } finally {
     submitting.value = false;
   }
+};
+
+/**
+ * 新建歌单后直接把当前曲目加进去，避免再选一次
+ * @param playlistId 新歌单 ID
+ * @param scope 新歌单所属类型
+ */
+const handleCreated = async (playlistId: string, scope: ContentScope): Promise<void> => {
+  if (await handlePick(playlistId, scope)) emit("update:open", false);
 };
 </script>
 
@@ -128,5 +143,5 @@ const handlePick = async (playlistId: string): Promise<void> => {
       <SButton variant="tertiary" @click="close">{{ t("common.cancel") }}</SButton>
     </template>
   </SDialog>
-  <PlaylistCreateDialog v-model:open="createDialogOpen" :mode="mode" />
+  <PlaylistCreateDialog v-model:open="createDialogOpen" :mode="mode" @created="handleCreated" />
 </template>
